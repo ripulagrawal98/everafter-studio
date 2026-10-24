@@ -1,0 +1,134 @@
+/* The actual customer website: full-width, responsive, multi-section landing page. */
+html { scroll-behavior:smooth }
+.wedding-preview-host { scrollbar-width:thin; scrollbar-color:#c6b2aa transparent; scroll-behavior:smooth; }
+.preview-shell.phone .wedding-preview-host { width:340px; max-width:100%; height:660px; overflow-y:auto; overflow-x:hidden; border:7px solid #fff; border-radius:20px; box-shadow:0 20px 60px #503e3330; background:#fff; }
+.preview-shell.desktop .wedding-preview-host { width:100%; height:660px; overflow-y:auto; overflow-x:hidden; border:7px solid #fff; border-radius:12px; box-shadow:0 20px 60px #503e3330; background:#fff; }
+#publishedApp { padding:0; background:transparent; }
+.wedding-site {
+  --ws-bg:#fcf5ef; --ws-paper:#fffaf5; --ws-paper-alt:#f6e9e7;
+  --ws-ink:#654c55; --ws-subtle:#826d70; --ws-accent:#ab7584; --ws-outline:#e4c6c8;
+  background:var(--ws-bg); color:var(--ws-ink); font-family:'DM Sans',sans-serif;
+  font-weight:400; font-size:14px; line-height:1.6; width:100%; isolation:isolate; text-align:center;
+}
+.wedding-site.ws-heritage { --ws-bg:#331623;--ws-paper:#4d2031;--ws-paper-alt:#602b3d;--ws-ink:#f6dec1;--ws-subtle:#e2bda2;--ws-accent:#e1b881;--ws-outline:#875d59; }
+.wedding-site.ws-minimal { --ws-bg:#f6f5ee;--ws-paper:#fffefa;--ws-paper-alt:#e8eee4;--ws-ink:#435447;--ws-subtle:#67796a;--ws-accent:#6f8a75;--ws-outline:#c6d3c3; }
+.wedding-site * { box-sizing:border-box; }
+.wedding-site a { color:inherit; }
+.wedding-site .ws-nav {
+  position:sticky; top:0; z-index:20; min-height:70px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px clamp(18px,5%,90px);
+  background:var(--ws-paper); border-bottom:1px solid var(--ws-outline);
+}
+.wedding-site .ws-monogram { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:25px; letter-spacing:.02em; line-height:1; flex-shrink:0; text-decoration:none; }
+.wedding-site .ws-logo-amp { display:inline-block; color:var(--ws-accent); font-style:italic; padding:0 4px; }
+.wedding-site .ws-nav nav { display:flex; align-items:center; justify-content:flex-end; flex-wrap:nowrap; gap:clamp(12px,2.4vw,31px); overflow:auto; scrollbar-width:none; }
+.wedding-site .ws-nav nav::-webkit-scrollbar { display:none; }
+.wedding-site .ws-nav nav a { white-space:nowrap; text-decoration:none; font-size:10px; font-weight:600; letter-spacing:.04em; color:var(--ws-subtle); transition:color .2s; }
+.wedding-site .ws-nav nav a:hover { color:var(--ws-accent); }
+.wedding-site .ws-section { padding:95px clamp(22px,6vw,85px); position:relative; overflow:hidden; scroll-margin-top:64px; }
+.wedding-site .ws-content { max-width:1050px; margin:0 auto; position:relative; z-index:1; }
+.wedding-site .ws-hero { min-height:calc(100svh - 70px); display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#fffaf6 8%,#f7e7e5 105%); }
+.wedding-site.ws-heritage .ws-hero { background:radial-gradient(ellipse at center,#663248,#351523 82%); }
+.wedding-site.ws-minimal .ws-hero { background:radial-gradient(ellipse at center,#f7f9f2,#edf0e7); }
+.wedding-site .ws-hero-inner { position:relative; z-index:1; max-width:760px; padding:20px 0; }
+.wedding-site .ws-hero-ornament { position:absolute; font-size:280px; line-height:1; color:var(--ws-accent); opacity:.15; pointer-events:none; }
+.wedding-site .ws-ornament-left { top:-100px; left:-80px; transform:rotate(-18deg); }
+.wedding-site .ws-ornament-right { bottom:-115px; right:-80px; transform:rotate(20deg); }
+.wedding-site.ws-heritage .ws-hero-ornament { font-size:230px; opacity:.22; }
+.wedding-site .ws-kicker,.wedding-site .ws-section-eyebrow { color:var(--ws-accent); font-size:10px; letter-spacing:.28em; text-transform:uppercase; font-weight:700; margin:0 0 16px; }
+.wedding-site .ws-flower,.wedding-site .ws-small-flower { font-family:Georgia,serif; font-size:25px; color:var(--ws-accent); margin:5px auto 10px; }
+.wedding-site .ws-name-lockup { font-family:'Cormorant Garamond',Georgia,serif; line-height:.88; letter-spacing:-.045em; font-weight:500; font-size:clamp(75px,13vw,144px); margin:16px auto 20px; }
+.wedding-site .ws-name-lockup span { display:block; overflow-wrap:anywhere; }
+.wedding-site .ws-name-lockup .ws-name-amp { font-style:italic; color:var(--ws-accent); font-size:.47em; line-height:.95; margin:.1em auto; }
+.wedding-site .ws-hero-tagline { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(21px,2.8vw,30px); font-style:italic; color:var(--ws-subtle); max-width:500px; margin:20px auto; line-height:1.25; }
+.wedding-site .ws-hero-date { font-size:11px; letter-spacing:.16em; text-transform:uppercase; margin:20px auto 30px; font-weight:700; }
+.wedding-site .ws-date-dot { color:var(--ws-accent); padding:0 6px; }
+.wedding-site .ws-hero-button { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:14px; border:1px solid var(--ws-outline); border-radius:30px; padding:13px 25px; background:var(--ws-paper); font-size:11px; font-weight:700; transition:transform .2s; }
+.wedding-site .ws-hero-button:hover { transform:translateY(-3px); }
+.wedding-site .ws-scroll-hint { position:absolute; bottom:25px; font-size:9px; letter-spacing:.22em; color:var(--ws-subtle); }
+.wedding-site .ws-section h2 { font:500 clamp(43px,5.5vw,66px)/1 'Cormorant Garamond',Georgia,serif; letter-spacing:-.03em; margin:0 0 20px; }
+.wedding-site .ws-section-intro { max-width:600px; font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; line-height:1.4; margin:0 auto 35px; color:var(--ws-subtle); }
+.wedding-site .ws-story { background:var(--ws-paper); }
+.wedding-site .ws-story-copy { max-width:700px; margin:22px auto; font:400 clamp(22px,3vw,30px)/1.55 'Cormorant Garamond',Georgia,serif; white-space:pre-line; }
+.wedding-site .ws-story-end { font:italic 20px 'Cormorant Garamond',Georgia,serif; color:var(--ws-accent); margin-top:25px; }
+.wedding-site .ws-celebrations { background:var(--ws-bg); }
+.wedding-site .ws-event-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px; align-items:stretch; margin-top:34px; }
+.wedding-site .ws-event-card { background:var(--ws-paper); border:1px solid var(--ws-outline); padding:38px 22px 34px; min-width:0; }
+.wedding-site .ws-event-num { font-size:10px; letter-spacing:.18em; color:var(--ws-accent); margin-bottom:18px; }
+.wedding-site .ws-event-card h3 { font:500 37px 'Cormorant Garamond',Georgia,serif; margin:0 0 12px; line-height:1; overflow-wrap:anywhere; }
+.wedding-site .ws-event-date { font:600 12px 'DM Sans',sans-serif; }
+.wedding-site .ws-event-time { font:500 12px 'DM Sans',sans-serif; color:var(--ws-subtle); margin:6px auto 18px; }
+.wedding-site .ws-event-address { font:italic 19px 'Cormorant Garamond',Georgia,serif; margin:0 auto 14px; overflow-wrap:anywhere; }
+.wedding-site .ws-directions { display:inline-block; font-size:10px; font-weight:700; color:var(--ws-accent)!important; text-decoration:none; border-bottom:1px solid var(--ws-accent); padding:4px 0; }
+.wedding-site .ws-gallery { background:var(--ws-paper-alt); }
+.wedding-site .ws-photo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.wedding-site .ws-photo { margin:0; aspect-ratio:3/4; overflow:hidden; background:var(--ws-paper); border:5px solid var(--ws-paper); }
+.wedding-site .ws-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.wedding-site .ws-gallery-placeholder { border:1px dashed var(--ws-accent); padding:60px 25px; color:var(--ws-subtle); background:var(--ws-paper); max-width:550px; margin:0 auto; }
+.wedding-site .ws-gallery-placeholder span { font:56px 'Cormorant Garamond',Georgia,serif; }
+.wedding-site .ws-gallery-placeholder p { max-width:250px; margin:10px auto 0; font-size:12px; }
+.wedding-site .ws-venue { background:var(--ws-paper); }
+.wedding-site .ws-venue-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; }
+.wedding-site .ws-venue-card { border:1px solid var(--ws-outline); padding:30px 16px; background:var(--ws-bg); }
+.wedding-site .ws-venue-icon { font-size:30px; color:var(--ws-accent); }
+.wedding-site .ws-venue-card h3 { font:500 27px/1.2 'Cormorant Garamond',Georgia,serif; margin:10px auto 16px; overflow-wrap:anywhere; }
+.wedding-site .ws-closing { padding-top:115px; padding-bottom:115px; background:var(--ws-bg); }
+.wedding-site .ws-closing h2 { margin:20px auto; }
+.wedding-site .ws-closing p { font:italic 24px 'Cormorant Garamond',Georgia,serif; color:var(--ws-subtle); }
+.wedding-site .ws-closing-signature { font:italic 30px 'Cormorant Garamond',Georgia,serif; margin-top:32px; }
+.wedding-site .ws-closing-signature .ws-amp { color:var(--ws-accent); padding:0 7px; }
+.wedding-site .ws-footer { background:var(--ws-paper); border-top:1px solid var(--ws-outline); padding:20px 5%; display:flex; gap:15px; justify-content:space-between; align-items:center; font-size:10px; color:var(--ws-subtle); }
+.wedding-site .ws-footer span:first-child { font:600 19px 'Cormorant Garamond',Georgia,serif; }
+.wedding-site .ws-footer a { white-space:nowrap; text-decoration:none; }
+.wedding-preview-host .wedding-site { font-size:12px; }
+.wedding-preview-host .ws-nav { padding:8px 12px; min-height:54px; gap:8px; }
+.wedding-preview-host .ws-monogram { font-size:17px; }
+.wedding-preview-host .ws-nav nav { gap:11px; }
+.wedding-preview-host .ws-nav nav a { font-size:8px; }
+.wedding-preview-host .ws-section { padding:55px 18px; scroll-margin-top:54px; }
+.wedding-preview-host .ws-hero { min-height:585px; }
+.wedding-preview-host .ws-hero-ornament { font-size:150px; }
+.wedding-preview-host .ws-ornament-left { top:-55px; left:-38px; }
+.wedding-preview-host .ws-ornament-right { bottom:-65px; right:-40px; }
+.wedding-preview-host .ws-kicker,.wedding-preview-host .ws-section-eyebrow { font-size:8px; letter-spacing:.2em; }
+.wedding-preview-host .ws-name-lockup { font-size:clamp(48px,7vw,81px); }
+.wedding-preview-host .ws-hero-tagline { font-size:18px; }
+.wedding-preview-host .ws-hero-date { font-size:9px; }
+.wedding-preview-host .ws-section h2 { font-size:38px; }
+.wedding-preview-host .ws-section-intro { font-size:18px; }
+.wedding-preview-host .ws-story-copy { font-size:20px; }
+.wedding-preview-host .ws-event-grid { grid-template-columns:1fr; }
+.wedding-preview-host .ws-event-card { padding:28px 15px; }
+.wedding-preview-host .ws-event-card h3 { font-size:31px; }
+.wedding-preview-host .ws-photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.wedding-preview-host .ws-venue-grid { grid-template-columns:1fr; }
+.wedding-preview-host .ws-footer { padding:13px; font-size:8px; }
+.wedding-preview-host .ws-footer span:first-child { font-size:14px; }
+.wedding-preview-host .ws-scroll-hint { font-size:8px; }
+.ws-section-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 0; border-bottom:1px solid #e6dcd6; }
+.ws-section-toggle label { font-size:12px; font-weight:700; color:#53454a; }
+.ws-section-toggle p { font-size:10px; color:#877c79; margin:3px 0 0; }
+.ws-section-toggle input { width:19px; height:19px; accent-color:#a97983; }
+.ws-photo-edit { border:1px solid #e2d7d1; border-radius:9px; padding:14px; margin-top:20px; background:#fffdfa; }
+.ws-photo-edit h3 { font-size:12px; margin:0 0 8px; }
+.ws-photo-field { display:flex; align-items:center; gap:8px; margin:9px 0; }
+.ws-photo-field input { min-width:0; flex:1; padding:10px 11px; border-radius:6px; border:1px solid #e2d7d1; font-size:11px; }
+.ws-photo-field button { border:0; background:transparent; color:#9c626d; font-size:19px; padding:4px; }
+.ws-editor-note { color:#827574; font-size:10px; line-height:1.7; }
+@media(max-width:650px) {
+  .wedding-site .ws-nav { flex-direction:column; gap:5px; padding:8px 10px; }
+  .wedding-site .ws-nav nav { justify-content:flex-start; width:100%; gap:17px; }
+  .wedding-site .ws-section { scroll-margin-top:85px; padding:68px 22px; }
+  .wedding-site .ws-hero { min-height:calc(100svh - 88px); padding-top:75px; padding-bottom:75px; }
+  .wedding-site .ws-name-lockup { font-size:clamp(69px,16vw,98px); }
+  .wedding-site .ws-photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .wedding-site .ws-event-grid { grid-template-columns:1fr; }
+  .wedding-site .ws-footer { gap:10px; flex-wrap:wrap; justify-content:center; }
+}
+@media(max-width:400px) {
+  .wedding-site .ws-name-lockup { font-size:63px; }
+  .wedding-site .ws-hero-date { font-size:9px; }
+  .wedding-preview-host .ws-name-lockup { font-size:56px; }
+  .wedding-preview-host .ws-hero { min-height:530px; }
+  .wedding-site .ws-photo-grid { gap:8px; }
+}
