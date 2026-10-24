@@ -259,3 +259,49 @@ html { scroll-behavior:smooth }
   .preview-scroll-arrow{width:28px;height:28px;}
   #previewVerticalSlider{width:19px;}
 }
+
+/* Twin independent scroll panels for the editor and the live website preview.
+   The outer page can still scroll naturally; each slider controls only its pane. */
+#builderApp { --studio-pane-height:clamp(430px,calc(100dvh - 190px),660px); }
+.workspace { padding:27px 20px 30px clamp(20px,2.8vw,44px); display:flex; min-width:0; }
+.editor-pane-layout { display:flex; align-items:stretch; gap:10px; width:100%; height:var(--studio-pane-height); min-width:0; }
+.editor-scroll-pane {
+  min-width:0; flex:1 1 auto; height:100%;
+  overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
+  scrollbar-width:thin; scrollbar-color:#cdb7b9 transparent;
+  padding:23px clamp(12px,2.8vw,43px) 20px 6px;
+}
+.editor-scroll-pane:focus-visible {outline:2px solid #ab7b8e;outline-offset:-3px;}
+.editor-scroll-controls {
+  flex:0 0 40px;
+  height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:12px 0 7px;
+  background:color-mix(in srgb,#fff 66%,transparent);
+  border:1px solid #e3d6d0; border-radius:25px;
+  box-shadow:0 8px 24px #4c2d3510;
+}
+#editorVerticalSlider {
+  writing-mode:vertical-lr; direction:rtl;
+  flex:1 1 auto; min-height:90px; width:24px; height:100%;
+  margin:0; accent-color:#a77383; cursor:ns-resize;
+}
+#editorVerticalSlider:disabled{opacity:.35;cursor:default}
+.preview-shell.phone .wedding-preview-host,.preview-shell.desktop .wedding-preview-host {
+  height:var(--studio-pane-height);
+  overscroll-behavior:contain;
+}
+.preview-scroll-controls {height:var(--studio-pane-height);}
+@media(max-width:850px) {
+  .workspace{padding:20px 14px 28px;}
+  .editor-pane-layout{gap:9px;}
+  .editor-scroll-pane{padding:20px 20px 18px 8px;}
+}
+@media(max-width:520px) {
+  #builderApp {--studio-pane-height:clamp(410px,calc(100dvh - 220px),580px);}
+  .workspace{padding:12px 10px 28px;}
+  .editor-pane-layout{gap:7px;}
+  .editor-scroll-pane{padding:19px 7px 16px 7px;}
+  .editor-scroll-controls{flex-basis:35px;}
+  #editorVerticalSlider{width:19px;}
+}

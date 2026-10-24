@@ -109,3 +109,17 @@ test('builder preview provides an independent vertical slider with arrow control
  assert.ok(script.includes("slider.addEventListener('input'"));
  assert.ok(script.includes("stage.scrollTop = limit * (Number(slider.value) / 1000)"));
 });
+
+test('editor and preview have two separate independent vertical scroll rails',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  for (const id of ['editorScrollPane','editorScrollUp','editorScrollDown','editorVerticalSlider','previewStage','previewScrollUp','previewScrollDown','previewVerticalSlider'])
+    assert.match(html,new RegExp('id="'+id+'"'));
+  assert.match(app,/pane\.addEventListener\('scroll', syncEditorScroll/);
+  assert.match(app,/stage\.addEventListener\('scroll', syncPreviewScroll/);
+  assert.match(app,/pane\.scrollTop = limit \* \(Number\(slider\.value\) \/ 1000\)/);
+  assert.match(app,/stage\.scrollTop = limit \* \(Number\(slider\.value\) \/ 1000\)/);
+  assert.match(app,/setupEditorScroll\(\)/);
+  assert.match(app,/setupPreviewScroll\(\)/);
+});

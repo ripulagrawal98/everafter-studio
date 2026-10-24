@@ -177,6 +177,37 @@
     if (up) up.disabled = position <= 1;
     if (down) down.disabled = limit <= 1 || position >= limit - 1;
   }
+  function syncEditorScroll() {
+    const pane = $('#editorScrollPane'), slider = $('#editorVerticalSlider');
+    if (!pane || !slider) return;
+    const limit = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    const position = Math.min(Math.max(0, pane.scrollTop), limit);
+    slider.value = String(limit ? Math.round(position / limit * 1000) : 0);
+    slider.disabled = limit <= 1;
+    const up = $('#editorScrollUp'), down = $('#editorScrollDown');
+    if (up) up.disabled = position <= 1;
+    if (down) down.disabled = limit <= 1 || position >= limit - 1;
+  }
+  function setupEditorScroll() {
+    const pane = $('#editorScrollPane'), slider = $('#editorVerticalSlider');
+    if (!pane || !slider) return;
+    pane.addEventListener('scroll', syncEditorScroll, {passive:true});
+    slider.addEventListener('input', () => {
+      const limit = Math.max(0, pane.scrollHeight - pane.clientHeight);
+      pane.scrollTop = limit * (Number(slider.value) / 1000);
+      syncEditorScroll();
+    });
+    const scrollStep = (direction) => {
+      pane.scrollBy({top: direction * Math.max(180, pane.clientHeight * 0.65), behavior:'smooth'});
+    };
+    $('#editorScrollUp').addEventListener('click', () => scrollStep(-1));
+    $('#editorScrollDown').addEventListener('click', () => scrollStep(1));
+    window.addEventListener('resize', syncEditorScroll);
+    // Recalculate after content is swapped by the step editor.
+    const observer = new MutationObserver(() => requestAnimationFrame(syncEditorScroll));
+    observer.observe($('#editor'), {childList:true});
+    syncEditorScroll();
+  }
   function setupPreviewScroll() {
     const stage = $('#previewStage'), slider = $('#previewVerticalSlider');
     if (!stage || !slider) return;
@@ -270,6 +301,7 @@
   }
   function notice(message) { const n = $('#appNotice'); n.textContent = message; n.hidden = !message; }
   function setStep(next) {
+    const oldStep = step;
     step = Math.max(0, Math.min(4, next));
     $('#editor').innerHTML = [themeEditor, coupleEditor, eventsEditor, sectionsEditor, publishEditor][step]();
     $$('.step').forEach(b => { const selected = +b.dataset.step === step; b.classList.toggle('active', selected); b.setAttribute('aria-current', selected ? 'step' : 'false'); });
@@ -277,6 +309,8 @@
     const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? published ? 'Update website ↗' : 'Publish website ↗' : 'Continue →';
     nextButton.disabled = publishBusy;
     notice('');
+    if (oldStep !== step && $('#editorScrollPane')) $('#editorScrollPane').scrollTop = 0;
+    requestAnimationFrame(syncEditorScroll);
   }
   function refresh() { saveDraft(); preview(); if (step === 4) setStep(4); }
   async function publishSite() {
@@ -381,6 +415,7 @@
       requestAnimationFrame(syncPreviewScroll);
     }));
     setupPreviewScroll();
+    setupEditorScroll();
     preview(); setStep(0); syncColorControls();
   }
   async function setupPublished(slug) {
