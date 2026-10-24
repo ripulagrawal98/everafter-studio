@@ -142,3 +142,67 @@ html { scroll-behavior:smooth }
 .wedding-site.ws-custom-colors .ws-hero {
   background: radial-gradient(ellipse at center,var(--ws-paper),var(--ws-bg) 95%);
 }
+
+/* Independent section design variants: layouts rather than color-only changes. */
+.wedding-site .ws-hero.ws-layout-split .ws-hero-inner{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"kicker names" "flower names" "tagline names" "date names" "button names";max-width:1100px;width:100%;align-items:center;text-align:left;column-gap:40px}
+.wedding-site .ws-hero.ws-layout-split .ws-kicker{grid-area:kicker;align-self:end}
+.wedding-site .ws-hero.ws-layout-split .ws-flower{grid-area:flower;margin:0}
+.wedding-site .ws-hero.ws-layout-split .ws-name-lockup{grid-area:names;border-left:1px solid var(--ws-outline);padding:35px 0 35px 40px;font-size:clamp(65px,9vw,115px);margin:0;text-align:left}
+.wedding-site .ws-hero.ws-layout-split .ws-hero-tagline{grid-area:tagline;margin:12px 0}
+.wedding-site .ws-hero.ws-layout-split .ws-hero-date{grid-area:date;margin:12px 0}
+.wedding-site .ws-hero.ws-layout-split .ws-hero-button{grid-area:button;justify-self:start}
+.wedding-site .ws-hero.ws-layout-framed .ws-hero-inner{border:2px solid var(--ws-outline);outline:1px solid var(--ws-outline);outline-offset:8px;padding:55px 50px;background:color-mix(in srgb,var(--ws-paper) 75%,transparent)}
+.wedding-site .ws-story.ws-layout-editorial .ws-content{text-align:left;display:grid;grid-template-columns:minmax(150px,1fr) minmax(260px,2fr);gap:14px 60px}
+.wedding-site .ws-story.ws-layout-editorial .ws-section-eyebrow,.wedding-site .ws-story.ws-layout-editorial h2,.wedding-site .ws-story.ws-layout-editorial .ws-small-flower{grid-column:1}
+.wedding-site .ws-story.ws-layout-editorial .ws-story-copy{grid-column:2;grid-row:1/span 4;margin:0;font-size:clamp(25px,3.7vw,37px)}
+.wedding-site .ws-story.ws-layout-editorial .ws-story-end{grid-column:2;text-align:right}
+.wedding-site .ws-story.ws-layout-letter .ws-content{max-width:730px;background:var(--ws-paper-alt);border:1px solid var(--ws-outline);box-shadow:0 15px 45px #0000000b;padding:clamp(35px,7vw,85px) clamp(25px,7vw,70px);transform:rotate(-.5deg)}
+.wedding-site .ws-story.ws-layout-letter .ws-story-copy{text-align:left;font-style:italic;line-height:1.75}
+.wedding-site .ws-celebrations.ws-layout-timeline .ws-event-grid{max-width:740px;margin:40px auto 0;display:block;border-left:1px solid var(--ws-outline);padding-left:36px}
+.wedding-site .ws-celebrations.ws-layout-timeline .ws-event-card{position:relative;text-align:left;margin:0 0 28px;border:0;border-bottom:1px solid var(--ws-outline);padding:20px 15px 28px;background:transparent}
+.wedding-site .ws-celebrations.ws-layout-timeline .ws-event-card:before{content:"";position:absolute;left:-43px;top:28px;width:13px;height:13px;background:var(--ws-accent);border-radius:50%;box-shadow:0 0 0 5px var(--ws-bg)}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-grid{display:block;max-width:900px;margin:30px auto}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-card{display:grid;grid-template-columns:95px 1fr 1fr;align-items:center;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--ws-outline);padding:20px 6px;gap:4px 18px}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-num{grid-row:1/span 4;margin:0}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-card h3{grid-column:2;grid-row:1/span 2}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-date,.wedding-site .ws-celebrations.ws-layout-rows .ws-event-time{grid-column:3}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-address,.wedding-site .ws-celebrations.ws-layout-rows .ws-directions{grid-column:2/span 2;margin:0}
+.wedding-site .ws-gallery.ws-layout-mosaic .ws-photo-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.wedding-site .ws-gallery.ws-layout-mosaic .ws-photo:nth-child(5n+1){grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+.wedding-site .ws-gallery.ws-layout-filmstrip .ws-photo-grid{display:flex;overflow-x:auto;gap:14px;scroll-snap-type:x mandatory;padding-bottom:16px}
+.wedding-site .ws-gallery.ws-layout-filmstrip .ws-photo{flex:0 0 min(58%,310px);scroll-snap-align:center}
+.wedding-site .ws-venue.ws-layout-list .ws-venue-grid{display:block;max-width:780px;margin:auto}
+.wedding-site .ws-venue.ws-layout-list .ws-venue-card{display:flex;align-items:center;text-align:left;gap:20px;padding:22px 5px;background:transparent;border:0;border-bottom:1px solid var(--ws-outline)}
+.wedding-site .ws-venue.ws-layout-list .ws-venue-card h3{flex:1;margin:0}
+.wedding-site .ws-venue.ws-layout-highlight .ws-venue-grid{display:grid;grid-template-columns:1fr;max-width:650px;margin:auto}
+.wedding-site .ws-venue.ws-layout-highlight .ws-venue-card{padding:55px 20px;border:2px solid var(--ws-accent);background:var(--ws-paper-alt)}
+.wedding-site .ws-venue.ws-layout-highlight .ws-venue-card h3{font-size:clamp(32px,5vw,50px)}
+.wedding-site .ws-closing.ws-layout-framed .ws-content{max-width:730px;padding:60px 35px;border:2px solid var(--ws-outline);outline:1px solid var(--ws-outline);outline-offset:8px;background:var(--ws-paper)}
+.wedding-site .ws-closing.ws-layout-banner{background:var(--ws-ink);color:var(--ws-paper);padding:140px 20px}
+.wedding-site .ws-closing.ws-layout-banner .ws-section-eyebrow,.wedding-site .ws-closing.ws-layout-banner .ws-small-flower{color:var(--ws-accent)}
+.wedding-site .ws-closing.ws-layout-banner h2{font-size:clamp(55px,8vw,100px)}
+.wedding-site .ws-closing.ws-layout-banner p{color:var(--ws-paper)}
+@media(max-width:700px){
+.wedding-site .ws-hero.ws-layout-split .ws-hero-inner{display:flex;flex-direction:column;text-align:center;gap:14px}
+.wedding-site .ws-hero.ws-layout-split .ws-name-lockup{border:0;border-top:1px solid var(--ws-outline);padding:20px 0;margin:0;text-align:center}
+.wedding-site .ws-hero.ws-layout-split .ws-hero-button{align-self:center}
+.wedding-site .ws-hero.ws-layout-split .ws-hero-tagline,.wedding-site .ws-hero.ws-layout-split .ws-hero-date{margin:0}
+.wedding-site .ws-hero.ws-layout-framed .ws-hero-inner{padding:45px 24px}
+.wedding-site .ws-story.ws-layout-editorial .ws-content{display:block;text-align:center}
+.wedding-site .ws-story.ws-layout-editorial .ws-story-copy{text-align:left}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-card{grid-template-columns:1fr;text-align:center}
+.wedding-site .ws-celebrations.ws-layout-rows .ws-event-num,.wedding-site .ws-celebrations.ws-layout-rows .ws-event-card h3,.wedding-site .ws-celebrations.ws-layout-rows .ws-event-date,.wedding-site .ws-celebrations.ws-layout-rows .ws-event-time,.wedding-site .ws-celebrations.ws-layout-rows .ws-event-address,.wedding-site .ws-celebrations.ws-layout-rows .ws-directions{grid-column:1;grid-row:auto}
+.wedding-site .ws-gallery.ws-layout-mosaic .ws-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wedding-site .ws-venue.ws-layout-list .ws-venue-card{flex-wrap:wrap;justify-content:center;text-align:center}
+.wedding-site .ws-venue.ws-layout-list .ws-venue-card h3{flex:1 1 100%}
+}
+.wedding-preview-host .ws-hero.ws-layout-split .ws-hero-inner{display:flex;flex-direction:column;text-align:center;gap:12px}
+.wedding-preview-host .ws-hero.ws-layout-split .ws-name-lockup{border:0;border-top:1px solid var(--ws-outline);padding:16px 0;text-align:center}
+.wedding-preview-host .ws-hero.ws-layout-split .ws-hero-button{align-self:center}
+.wedding-preview-host .ws-hero.ws-layout-split .ws-hero-tagline,.wedding-preview-host .ws-hero.ws-layout-split .ws-hero-date{margin:0}
+.wedding-preview-host .ws-hero.ws-layout-framed .ws-hero-inner{padding:30px 18px}
+.wedding-preview-host .ws-story.ws-layout-editorial .ws-content{display:block;text-align:left}
+.wedding-preview-host .ws-celebrations.ws-layout-rows .ws-event-card{display:block;text-align:center}
+.wedding-preview-host .ws-celebrations.ws-layout-rows .ws-event-card>*{margin-bottom:7px}
+.wedding-preview-host .ws-gallery.ws-layout-mosaic .ws-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wedding-preview-host .ws-venue.ws-layout-list .ws-venue-card{flex-direction:column;text-align:center}
