@@ -98,3 +98,14 @@ test('shared website renderer switches styles per section independently and safe
  assert.ok(bad.includes('ws-hero ws-layout-centered'));
  assert.ok(!bad.includes('onclick="evil()'));
 });
+
+test('builder preview provides an independent vertical slider with arrow controls', async () => {
+ const {readFileSync} = await import('node:fs');
+ const markup = readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+ const script = readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+ for (const id of ['previewStage','previewVerticalSlider','previewScrollUp','previewScrollDown'])
+   assert.ok(markup.includes('id="'+id+'"'), 'Missing '+id);
+ assert.ok(script.includes("stage.addEventListener('scroll', syncPreviewScroll"));
+ assert.ok(script.includes("slider.addEventListener('input'"));
+ assert.ok(script.includes("stage.scrollTop = limit * (Number(slider.value) / 1000)"));
+});

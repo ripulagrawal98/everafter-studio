@@ -206,3 +206,56 @@ html { scroll-behavior:smooth }
 .wedding-preview-host .ws-celebrations.ws-layout-rows .ws-event-card>*{margin-bottom:7px}
 .wedding-preview-host .ws-gallery.ws-layout-mosaic .ws-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .wedding-preview-host .ws-venue.ws-layout-list .ws-venue-card{flex-direction:column;text-align:center}
+
+/* Dedicated scroll slider alongside the preview, separate from editor scrolling. */
+.preview-shell { align-items:stretch; gap:12px; }
+.preview-shell.phone .wedding-preview-host { flex:0 1 340px; min-width:0; }
+.preview-shell.desktop .wedding-preview-host { flex:1 1 auto; min-width:0; }
+.preview-scroll-controls {
+  flex:0 0 40px;
+  align-self:stretch;
+  height:660px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:12px 0 7px;
+  background:color-mix(in srgb,#fff 66%,transparent);
+  border:1px solid #e3d6d0;
+  border-radius:25px;
+  box-shadow:0 8px 24px #4c2d3510;
+}
+.preview-scroll-arrow {
+  width:30px;height:30px;flex:0 0 30px;
+  border:1px solid #dcc9c7;
+  border-radius:50%; background:#fffdfb;
+  color:#794f5c; font-size:17px;
+  display:grid;place-items:center;
+}
+.preview-scroll-arrow:disabled {opacity:.25}
+.preview-scroll-arrow:not(:disabled):hover{background:#f5e7ea}
+#previewVerticalSlider {
+  writing-mode:vertical-lr;
+  direction:rtl;
+  flex:1 1 auto;
+  height:100%;
+  min-height:90px;
+  width:24px;
+  margin:0;
+  cursor:ns-resize;
+  accent-color:#a77383;
+}
+#previewVerticalSlider:disabled{opacity:.35;cursor:default}
+.preview-scroll-caption {
+  writing-mode:vertical-rl;
+  font:700 9px 'DM Sans',sans-serif;
+  letter-spacing:.18em; color:#a38c86;
+  padding-bottom:3px;
+}
+@media(max-width:520px) {
+  .preview-shell{gap:7px;}
+  .preview-scroll-controls{flex-basis:35px;}
+  .preview-scroll-arrow{width:28px;height:28px;}
+  #previewVerticalSlider{width:19px;}
+}

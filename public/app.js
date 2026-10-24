@@ -157,7 +157,56 @@
     }).join('');
     return `<div class="invite-inner"><p class="invite-overline">Together with their families</p><div class="invite-ornament" aria-hidden="true">✦</div><div class="invite-names">${names}</div>${d.tagline.trim() ? `<p class="invite-tagline">${escapeHtml(d.tagline.trim())}</p>` : ''}<div class="invite-divider"></div>${d.message.trim() ? `<p class="invite-welcome">${escapeHtml(d.message.trim())}</p>` : ''}<h2 class="invite-heading">A celebration in ${d.events.length === 1 ? 'one beautiful act' : `${d.events.length} beautiful acts`}</h2>${events || '<p class="invite-welcome">Your celebrations will appear here.</p>'}<p class="invite-signoff">A beautiful beginning, made sweeter by your presence.</p><div class="invite-end" aria-hidden="true">❦</div></div>`;
   }
-  function preview() { const stage = $('#previewStage'); if (!stage) return; const keep = stage.scrollTop; stage.innerHTML = window.EverafterSite.render(draft, {preview:true}); stage.scrollTop = keep; }
+  function preview() {
+    const stage = $('#previewStage');
+    if (!stage) return;
+    const keep = stage.scrollTop;
+    stage.innerHTML = window.EverafterSite.render(draft, {preview:true});
+    stage.scrollTop = keep;
+    requestAnimationFrame(syncPreviewScroll);
+  }
+  // The vertical rail is independent of the editor's page scrolling.
+  function syncPreviewScroll() {
+    const stage = $('#previewStage'), slider = $('#previewVerticalSlider');
+    if (!stage || !slider) return;
+    const limit = Math.max(0, stage.scrollHeight - stage.clientHeight);
+    const position = Math.min(Math.max(0, stage.scrollTop), limit);
+    slider.value = String(limit ? Math.round(position / limit * 1000) : 0);
+    slider.disabled = limit <= 1;
+    const up = $('#previewScrollUp'), down = $('#previewScrollDown');
+    if (up) up.disabled = position <= 1;
+    if (down) down.disabled = limit <= 1 || position >= limit - 1;
+  }
+  function setupPreviewScroll() {
+    const stage = $('#previewStage'), slider = $('#previewVerticalSlider');
+    if (!stage || !slider) return;
+    stage.addEventListener('scroll', syncPreviewScroll, {passive:true});
+    slider.addEventListener('input', () => {
+      const limit = Math.max(0, stage.scrollHeight - stage.clientHeight);
+      stage.scrollTop = limit * (Number(slider.value) / 1000);
+      syncPreviewScroll();
+    });
+    const scrollStep = (direction) => {
+      stage.scrollBy({top: direction * Math.max(180, stage.clientHeight * 0.65), behavior:'smooth'});
+    };
+    $('#previewScrollUp').addEventListener('click', () => scrollStep(-1));
+    $('#previewScrollDown').addEventListener('click', () => scrollStep(1));
+    window.addEventListener('resize', syncPreviewScroll);
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(syncPreviewScroll);
+      observer.observe(stage);
+      const watchPage = () => {
+        observer.disconnect();
+        observer.observe(stage);
+        if (stage.firstElementChild) observer.observe(stage.firstElementChild);
+        syncPreviewScroll();
+      };
+      // Content is re-rendered on every draft edit; refresh the height observer.
+      const contentObserver = new MutationObserver(watchPage);
+      contentObserver.observe(stage, {childList:true});
+    }
+    syncPreviewScroll();
+  }
   function themeEditor() {
     const colors = activeColors();
     const palettes = PALETTES.map(p => {
@@ -328,8 +377,10 @@
     $('#headerPreview').addEventListener('click', () => { $('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
     $$('.preview-toggle button').forEach(b => b.addEventListener('click', () => {
       $('#previewShell').className = 'preview-shell ' + b.dataset.size;
-      $$('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });
+      $('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });
+      requestAnimationFrame(syncPreviewScroll);
     }));
+    setupPreviewScroll();
     preview(); setStep(0); syncColorControls();
   }
   async function setupPublished(slug) {

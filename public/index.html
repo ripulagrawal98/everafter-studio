@@ -43,7 +43,15 @@
       </section>
       <aside class="preview-column" aria-label="Live invitation preview">
         <div class="preview-toolbar"><div><span class="live-dot"></span> LIVE PREVIEW <small>Changes appear instantly</small></div><div class="preview-toggle"><button type="button" data-size="phone" class="selected" aria-label="Phone preview" aria-pressed="true">▯</button><button type="button" data-size="desktop" aria-label="Desktop preview" aria-pressed="false">▭</button></div></div>
-        <div id="previewShell" class="preview-shell phone"><div id="previewStage" class="wedding-preview-host"></div></div>
+        <div id="previewShell" class="preview-shell phone">
+          <div id="previewStage" class="wedding-preview-host" tabindex="0" aria-label="Scrollable wedding website preview"></div>
+          <div class="preview-scroll-controls" aria-label="Preview vertical scroll controls">
+            <button id="previewScrollUp" class="preview-scroll-arrow" type="button" aria-label="Scroll preview up" title="Scroll preview up">↑</button>
+            <input id="previewVerticalSlider" type="range" min="0" max="1000" step="1" value="0" aria-label="Preview scroll position" aria-orientation="vertical" />
+            <button id="previewScrollDown" class="preview-scroll-arrow" type="button" aria-label="Scroll preview down" title="Scroll preview down">↓</button>
+            <span class="preview-scroll-caption" aria-hidden="true">SCROLL</span>
+          </div>
+        </div>
         <div class="preview-caption">A glimpse of your very own wedding website <span aria-hidden="true">✦</span></div>
       </aside>
     </main>
