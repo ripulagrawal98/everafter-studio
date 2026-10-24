@@ -132,3 +132,13 @@ html { scroll-behavior:smooth }
   .wedding-preview-host .ws-hero { min-height:530px; }
   .wedding-site .ws-photo-grid { gap:8px; }
 }
+
+/* User-selected overrides win against per-theme gradient rules without changing layouts. */
+.wedding-site.ws-custom-colors {
+  --ws-paper-alt: color-mix(in srgb, var(--ws-bg) 84%, var(--ws-accent) 16%);
+  --ws-subtle: color-mix(in srgb, var(--ws-ink) 88%, var(--ws-bg) 12%);
+  --ws-outline: color-mix(in srgb, var(--ws-accent) 42%, var(--ws-bg) 58%);
+}
+.wedding-site.ws-custom-colors .ws-hero {
+  background: radial-gradient(ellipse at center,var(--ws-paper),var(--ws-bg) 95%);
+}

@@ -8,8 +8,73 @@
     { id: 'heritage', name: 'Royal Heritage', desc: 'Regal & timeless' },
     { id: 'minimal', name: 'Modern Minimal', desc: 'Quietly elegant' }
   ];
+
+  // Optional custom colors: without a selection, keep the theme's original design.
+  const PALETTES = [
+    {id:'rose',name:'Rose Garden',colors:{background:'#FCEFEB',surface:'#FFFAF6',text:'#634455',accent:'#96566D'}},
+    {id:'sage',name:'Soft Sage',colors:{background:'#EDF2E9',surface:'#FFFEF8',text:'#344D40',accent:'#50735C'}},
+    {id:'champagne',name:'Champagne',colors:{background:'#FAF0DE',surface:'#FFFDF5',text:'#56452F',accent:'#845B32'}},
+    {id:'midnight',name:'Midnight',colors:{background:'#211D33',surface:'#302B44',text:'#FAF1E6',accent:'#E5B9C0'}},
+    {id:'royal',name:'Royal Plum',colors:{background:'#331623',surface:'#4D2031',text:'#F6DEC1',accent:'#E1B881'}}
+  ];
+  const THEME_DEFAULTS = {
+    blossom:{background:'#FCF5EF',surface:'#FFFAF5',text:'#654C55',accent:'#AB7584'},
+    heritage:{background:'#331623',surface:'#4D2031',text:'#F6DEC1',accent:'#E1B881'},
+    minimal:{background:'#F6F5EE',surface:'#FFFEFA',text:'#435447',accent:'#6F8A75'}
+  };
+  const COLOR_FIELDS = [
+    ['background','Page background'],
+    ['surface','Cards & sections'],
+    ['text','Text color'],
+    ['accent','Accent color']
+  ];
+  const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+  const validColors = (colors) => colors && typeof colors === 'object' && COLOR_FIELDS.every(([key]) => typeof colors[key] === 'string' && COLOR_RE.test(colors[key])) ?
+    Object.fromEntries(COLOR_FIELDS.map(([key]) => [key, colors[key].toUpperCase()])) : null;
+  const activeColors = () => validColors(draft.colors) || THEME_DEFAULTS[draft.theme];
+  function colorContrast(a, b) {
+    const brightness = (hex) => {
+      const parts = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255);
+      const luminance = parts.map(c => c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4));
+      return 0.2126*luminance[0]+0.7152*luminance[1]+0.0722*luminance[2];
+    };
+    const l1 = brightness(a), l2 = brightness(b);
+    return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+  }
+  function selectedPalette() {
+    const custom = validColors(draft.colors);
+    if (!custom) return 'theme';
+    return PALETTES.find(p => COLOR_FIELDS.every(([key]) => p.colors[key].toUpperCase() === custom[key]))?.id || 'custom';
+  }
+  function updateColorNotice() {
+    const el = $('#colorContrastNotice');
+    if (!el) return;
+    const c = activeColors();
+    const lowText = Math.min(colorContrast(c.text,c.background), colorContrast(c.text,c.surface)) < 4.5;
+    const lowAccent = Math.min(colorContrast(c.accent,c.background),colorContrast(c.accent,c.surface)) < 3;
+    el.textContent = lowText ? '⚠ Text and background colors are too similar. Try increasing contrast for readability.' :
+      lowAccent ? 'Tip: Your accent color may be difficult to read on the selected backgrounds.' :
+      '✓ The chosen text color has good contrast on both backgrounds.';
+    el.classList.toggle('contrast-warning',lowText||lowAccent);
+  }
+  function syncColorControls() {
+    const colors = activeColors();
+    COLOR_FIELDS.forEach(([key]) => {
+      const picker = $('#picker-' + key), hex = $('#hex-' + key);
+      if (picker) picker.value = colors[key];
+      if (hex && document.activeElement !== hex) hex.value = colors[key];
+    });
+    $('#editor [data-palette]').forEach(button => {
+      const active = button.dataset.palette === selectedPalette();
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+    const state = $('#paletteSelection');
+    if (state) state.textContent = draft.colors ? 'Custom palette applied' : 'Using original theme colors';
+    updateColorNotice();
+  }
   const EXAMPLE = {
-    theme: 'blossom', partner1: 'Anaya', partner2: 'Kabir',
+    theme: 'blossom', colors: null, partner1: 'Anaya', partner2: 'Kabir',
     tagline: 'A little destiny, a lifetime of love.',
     message: 'Together with our families, we invite you to celebrate the beginning of our forever.',
     story: 'Our paths crossed, our families brought us together, and a beautiful journey began. From that first conversation to the memories we are yet to make, we are so grateful to share this chapter with you.',
@@ -32,6 +97,7 @@
   const validTheme = (theme) => THEMES.some(x => x.id === theme) ? theme : 'blossom';
   const normalize = (v) => ({
     theme: validTheme(v?.theme),
+    colors: validColors(v?.colors),
     partner1: String(v?.partner1 ?? '').slice(0, 70),
     partner2: String(v?.partner2 ?? '').slice(0, 70),
     tagline: String(v?.tagline ?? '').slice(0, 180),
@@ -78,7 +144,16 @@
   }
   function preview() { const stage = $('#previewStage'); if (!stage) return; const keep = stage.scrollTop; stage.innerHTML = window.EverafterSite.render(draft, {preview:true}); stage.scrollTop = keep; }
   function themeEditor() {
-    return `<div class="section-kicker">Step 01 · Set the mood</div><h2 class="editor-title">Find your forever aesthetic.</h2><p class="editor-hint">Three unique invitations. One beautiful love story. You can switch themes anytime.</p><div class="theme-picker">${THEMES.map(t => `<button type="button" class="theme-option ${draft.theme === t.id ? 'active' : ''}" data-theme="${t.id}" aria-pressed="${draft.theme === t.id}"><div class="theme-picture ${t.id}"><span class="mini-top">THE WEDDING OF</span><span class="mini-names">A &amp; K</span><span class="mini-date">FOREVER BEGINS HERE</span></div><span class="theme-label">${t.name}</span><span class="theme-desc">${t.desc}</span></button>`).join('')}</div>`;
+    const colors = activeColors();
+    const palettes = PALETTES.map(p => {
+      const dots = COLOR_FIELDS.map(([key]) => '<span style="background:' + p.colors[key] + '" aria-hidden="true"></span>').join('');
+      return `<button type="button" class="palette-option" data-palette="${p.id}" aria-pressed="false"><span class="palette-dots">${dots}</span><span>${p.name}</span></button>`;
+    }).join('');
+    const controls = COLOR_FIELDS.map(([key,label]) =>
+      `<div class="color-control"><label for="picker-${key}">${label}</label><div class="color-control-inputs"><input type="color" id="picker-${key}" data-color-picker="${key}" value="${colors[key]}" aria-label="Pick ${label.toLowerCase()}" /><input type="text" id="hex-${key}" data-color-hex="${key}" value="${colors[key]}" maxlength="7" spellcheck="false" aria-label="${label} hex code" pattern="#[0-9a-fA-F]{6}" /></div></div>`
+    ).join('');
+    return `<div class="section-kicker">Step 01 · Set the mood</div><h2 class="editor-title">Find your forever aesthetic.</h2><p class="editor-hint">Choose a layout, then personalize every color. Your changes appear instantly.</p><div class="theme-picker">${THEMES.map(t => `<button type="button" class="theme-option ${draft.theme === t.id ? 'active' : ''}" data-theme="${t.id}" aria-pressed="${draft.theme === t.id}"><div class="theme-picture ${t.id}"><span class="mini-top">THE WEDDING OF</span><span class="mini-names">A &amp; K</span><span class="mini-date">FOREVER BEGINS HERE</span></div><span class="theme-label">${t.name}</span><span class="theme-desc">${t.desc}</span></button>`).join('')}</div>` +
+      `<section class="palette-panel" aria-label="Customize invitation colors"><div class="palette-head"><div><h3>Make it your own</h3><p id="paletteSelection">Using original theme colors</p></div><button type="button" class="reset-colors" data-reset-colors>↺ Reset theme colors</button></div><p class="palette-subheading">COLOR PALETTES</p><div class="palette-presets"><button type="button" class="palette-option" data-palette="theme" aria-pressed="true"><span class="palette-dots">${COLOR_FIELDS.map(([key])=>`<span style="background:${THEME_DEFAULTS[draft.theme][key]}" aria-hidden="true"></span>`).join('')}</span><span>Original</span></button>${palettes}</div><p class="palette-subheading">PICK INDIVIDUAL COLORS</p><div class="color-controls">${controls}</div><p class="color-contrast" id="colorContrastNotice" role="status"></p></section>`;
   }
   function inputField(label, key, placeholder, maxlength, type = 'text') {
     return `<div class="field"><label for="field-${key}">${label}</label><input id="field-${key}" name="${key}" data-field="${key}" type="${type}" maxlength="${maxlength}" value="${attribute(draft[key] || '')}" placeholder="${attribute(placeholder)}" /></div>`;
@@ -164,7 +239,16 @@
     }
     $('#editor').addEventListener('click', (evt) => {
       const theme = evt.target.closest('[data-theme]');
-      if (theme) { draft.theme = theme.dataset.theme; refresh(); setStep(0); return; }
+      if (theme) { draft.theme = theme.dataset.theme; refresh(); setStep(0); syncColorControls(); return; }
+      const preset = evt.target.closest('[data-palette]');
+      if (preset) {
+        const match = PALETTES.find(p => p.id === preset.dataset.palette);
+        draft.colors = match ? {...match.colors} : null;
+        refresh(); setStep(0); syncColorControls(); return;
+      }
+      if (evt.target.closest('[data-reset-colors]')) {
+        draft.colors = null; refresh(); setStep(0); syncColorControls(); return;
+      }
       const remove = evt.target.closest('[data-remove-event]');
       if (remove) {
         if (draft.events.length < 2) return notice('Please keep at least one celebration.');
@@ -185,6 +269,15 @@
     });
     $('#editor').addEventListener('input', (evt) => {
       const el = evt.target;
+      if (el.dataset.colorPicker || el.dataset.colorHex) {
+        const key = el.dataset.colorPicker || el.dataset.colorHex;
+        if (COLOR_FIELDS.some(([field]) => field === key) && COLOR_RE.test(el.value)) {
+          draft.colors = {...activeColors(),[key]:el.value.toUpperCase()};
+          refresh();
+          syncColorControls();
+        }
+        return;
+      }
       if (el.dataset.field) draft[el.dataset.field] = el.value;
       if (el.dataset.photoIndex !== undefined) draft.photos[+el.dataset.photoIndex] = el.value;
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; }
@@ -192,6 +285,7 @@
     });
     $('#editor').addEventListener('change', (evt) => {
       const el = evt.target;
+      if (el.dataset.colorHex) { if (!COLOR_RE.test(el.value)) el.value = activeColors()[el.dataset.colorHex]; syncColorControls(); }
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; refresh(); }
       if (el.dataset.section) { draft.sections[el.dataset.section] = el.checked; refresh(); }
     });
@@ -203,7 +297,7 @@
       $('#previewShell').className = 'preview-shell ' + b.dataset.size;
       $$('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });
     }));
-    preview(); setStep(0);
+    preview(); setStep(0); syncColorControls();
   }
   async function setupPublished(slug) {
     $('#builderApp').hidden = true;

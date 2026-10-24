@@ -4,6 +4,8 @@ An independent Cloudflare Pages application for creating customizable wedding we
 
 ## Features
 - Three original themes: Blossom, Royal Heritage, Modern Minimal
+- Five curated color palettes plus independent hex/color-picker controls for background, cards, text and accents; live contrast warning
+- Custom palettes persist in drafts and published site records (requires Cloudflare D1)
 - Custom couple names, invitation messages, and 1–12 events
 - Live mobile and desktop invitation previews
 - Browser-saved drafts

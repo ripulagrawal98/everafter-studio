@@ -6,6 +6,14 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
   const themes = new Set(['blossom','heritage','minimal']);
+  const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+  const COLOR_VARIABLES = {background:'--ws-bg',surface:'--ws-paper',text:'--ws-ink',accent:'--ws-accent'};
+  // Strictly whitelist the CSS custom properties and hex colors to avoid style injection from saved user data.
+  function colorStyle(colors) {
+    if (!colors || typeof colors !== 'object') return '';
+    if (!Object.keys(COLOR_VARIABLES).every(key => typeof colors[key] === 'string' && COLOR_RE.test(colors[key]))) return '';
+    return Object.entries(COLOR_VARIABLES).map(([key,variable]) => variable + ':' + colors[key].toUpperCase()).join(';');
+  }
 
   function prettyDate(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return '';
@@ -25,6 +33,7 @@
   function render(data, options = {}) {
     const d = data || {};
     const theme = themes.has(d.theme) ? d.theme : 'blossom';
+    const customColorStyle = colorStyle(d.colors);
     const partner1 = String(d.partner1 || 'Partner one').trim();
     const partner2 = String(d.partner2 || 'Partner two').trim();
     const events = (Array.isArray(d.events) ? d.events : []).slice(0,12);
@@ -63,7 +72,7 @@
     ).join('');
     const placeholder = '<div class="ws-gallery-placeholder" aria-label="Photo gallery preview"><span>♡</span><p>Add photo links in the editor to fill this space with your favourite moments.</p></div>';
 
-    return '<div class="wedding-site ws-' + theme + '">' +
+    return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + '"' + (customColorStyle ? ' style="' + esc(customColorStyle) + '"' : '') + '>' +
       '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav></header>' +
       '<main>' +
         '<section class="ws-section ws-hero" id="welcome">' +
@@ -84,5 +93,5 @@
     '</div>';
   }
 
-  window.EverafterSite = { render };
+  window.EverafterSite = { render, colorStyle };
 })();
