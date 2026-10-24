@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f8f4ef" />
+  <meta name="description" content="Create an elegant, personal wedding website in minutes. Choose a theme, add your celebrations and share your story." />
+  <title>Everafter Studio — Wedding Website Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <div id="builderApp">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Everafter Studio home"><span class="brand-mark">✳</span><span>everafter<span class="brand-light">studio</span></span></a>
+      <div class="header-note">A little magic, made yours</div>
+      <button id="headerPreview" class="header-preview" type="button">Preview invitation <span aria-hidden="true">↗</span></button>
+    </header>
+    <main class="app-layout">
+      <section class="workspace" aria-label="Wedding website builder">
+        <div class="eyebrow"><span class="eyebrow-rule"></span> YOUR WEDDING, YOUR WAY</div>
+        <h1>Every love story<br />deserves a <em>beautiful</em> beginning.</h1>
+        <p class="lead">Choose a look you love, add your celebrations, and create an invitation that's entirely yours.</p>
+        <nav class="steps" aria-label="Creation steps">
+          <button class="step active" data-step="0" type="button"><span class="step-num">01</span><span>Theme</span></button>
+          <button class="step" data-step="1" type="button"><span class="step-num">02</span><span>The couple</span></button>
+          <button class="step" data-step="2" type="button"><span class="step-num">03</span><span>Celebrations</span></button>
+          <button class="step" data-step="3" type="button"><span class="step-num">04</span><span>Publish</span></button>
+        </nav>
+        <div id="editor" class="editor"></div>
+        <div id="appNotice" class="notice" role="status" aria-live="polite" hidden></div>
+        <div class="workspace-actions">
+          <button class="btn btn-ghost" id="backButton" type="button">← Back</button>
+          <button class="btn btn-dark" id="nextButton" type="button">Continue <span aria-hidden="true">→</span></button>
+        </div>
+        <p class="save-status" id="saveStatus">Your draft is saved on this device</p>
+      </section>
+      <aside class="preview-column" aria-label="Live invitation preview">
+        <div class="preview-toolbar"><div><span class="live-dot"></span> LIVE PREVIEW <small>Changes appear instantly</small></div><div class="preview-toggle"><button type="button" data-size="phone" class="selected" aria-label="Phone preview" aria-pressed="true">▯</button><button type="button" data-size="desktop" aria-label="Desktop preview" aria-pressed="false">▭</button></div></div>
+        <div id="previewShell" class="preview-shell phone"><div id="previewStage" class="invitation blossom"></div></div>
+        <div class="preview-caption">A glimpse of your very own wedding website <span aria-hidden="true">✦</span></div>
+      </aside>
+    </main>
+    <footer class="app-footer"><span>Made for the moments that matter.</span><span>Everafter Studio · Preview edition</span></footer>
+  </div>
+  <div id="publishedApp" hidden></div>
+</body>
+</html>
