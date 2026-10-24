@@ -15,6 +15,18 @@
     return Object.entries(COLOR_VARIABLES).map(([key,variable]) => variable + ':' + colors[key].toUpperCase()).join(';');
   }
 
+  const LAYOUT_OPTIONS = {
+    hero:['centered','split','framed'],
+    story:['classic','editorial','letter'],
+    events:['cards','timeline','rows'],
+    gallery:['grid','mosaic','filmstrip'],
+    venue:['cards','list','highlight'],
+    closing:['classic','framed','banner']
+  };
+  function layoutFor(data, section) {
+    const choice = data?.sectionDesigns?.[section];
+    return LAYOUT_OPTIONS[section].includes(choice) ? choice : LAYOUT_OPTIONS[section][0];
+  }
   function prettyDate(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return '';
     const value = new Date(date + 'T12:00:00Z');
@@ -33,6 +45,7 @@
   function render(data, options = {}) {
     const d = data || {};
     const theme = themes.has(d.theme) ? d.theme : 'blossom';
+    const designClass = (section) => ' ws-layout-' + layoutFor(d, section);
     const customColorStyle = colorStyle(d.colors);
     const partner1 = String(d.partner1 || 'Partner one').trim();
     const partner2 = String(d.partner2 || 'Partner two').trim();
@@ -75,7 +88,7 @@
     return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + '"' + (customColorStyle ? ' style="' + esc(customColorStyle) + '"' : '') + '>' +
       '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav></header>' +
       '<main>' +
-        '<section class="ws-section ws-hero" id="welcome">' +
+        '<section class="ws-section ws-hero' + designClass('hero') + '" id="welcome">' +
           '<div class="ws-hero-ornament ws-ornament-left" aria-hidden="true">❀</div><div class="ws-hero-ornament ws-ornament-right" aria-hidden="true">❀</div>' +
           '<div class="ws-hero-inner"><div class="ws-kicker">TOGETHER WITH THEIR FAMILIES</div><div class="ws-flower">✦</div>' +
           '<div class="ws-name-lockup"><span>' + esc(partner1) + '</span><span class="ws-name-amp">&amp;</span><span>' + esc(partner2) + '</span></div>' +
@@ -84,11 +97,11 @@
           '<a class="ws-hero-button" href="#celebrations">Discover our celebrations <span aria-hidden="true">↓</span></a></div>' +
           '<div class="ws-scroll-hint">SCROLL TO EXPLORE <span aria-hidden="true">↓</span></div>' +
         '</section>' +
-        (hasStory ? '<section class="ws-section ws-story" id="story"><div class="ws-content"><div class="ws-section-eyebrow">THE BEGINNING OF FOREVER</div><h2>Our Story</h2><div class="ws-small-flower">✦</div><p class="ws-story-copy">' + esc(d.story) + '</p><div class="ws-story-end">and the best is yet to come.</div></div></section>' : '') +
-        '<section class="ws-section ws-celebrations" id="celebrations"><div class="ws-content"><div class="ws-section-eyebrow">YOU ARE CORDIALLY INVITED</div><h2>The Celebrations</h2><p class="ws-section-intro">' + esc(d.message || 'Your presence will make our celebration even more special.') + '</p><div class="ws-event-grid">' + (eventCards || '<p>Celebration details coming soon.</p>') + '</div></div></section>' +
-        (hasGallery ? '<section class="ws-section ws-gallery" id="gallery"><div class="ws-content"><div class="ws-section-eyebrow">LITTLE THINGS, LOVELY MEMORIES</div><h2>Our Moments</h2><p class="ws-section-intro">A few of our favourite chapters.</p>' + (showGalleryEmpty ? placeholder : '<div class="ws-photo-grid">' + gallery + '</div>') + '</div></section>' : '') +
-        (hasVenue ? '<section class="ws-section ws-venue" id="venue"><div class="ws-content"><div class="ws-section-eyebrow">COME CELEBRATE WITH US</div><h2>Find Your Way</h2><p class="ws-section-intro">' + esc(d.travelNote || 'We cannot wait to welcome you.') + '</p><div class="ws-venue-grid">' + venues.map((v,i) => '<article class="ws-venue-card"><span class="ws-venue-icon" aria-hidden="true">⌖</span><h3>' + esc(v) + '</h3><a class="ws-directions" href="' + esc(directions(v)) + '" target="_blank" rel="noopener noreferrer">Open directions ↗</a></article>').join('') + '</div></div></section>' : '') +
-        '<section class="ws-section ws-closing" id="closing"><div class="ws-content"><div class="ws-small-flower">❦</div><div class="ws-section-eyebrow">WITH ALL OUR LOVE</div><h2>Every beautiful beginning<br />is better with you.</h2><p>Your presence would mean the world to us.</p><div class="ws-closing-signature">' + names + '</div></div></section>' +
+        (hasStory ? '<section class="ws-section ws-story' + designClass('story') + '" id="story"><div class="ws-content"><div class="ws-section-eyebrow">THE BEGINNING OF FOREVER</div><h2>Our Story</h2><div class="ws-small-flower">✦</div><p class="ws-story-copy">' + esc(d.story) + '</p><div class="ws-story-end">and the best is yet to come.</div></div></section>' : '') +
+        '<section class="ws-section ws-celebrations' + designClass('events') + '" id="celebrations"><div class="ws-content"><div class="ws-section-eyebrow">YOU ARE CORDIALLY INVITED</div><h2>The Celebrations</h2><p class="ws-section-intro">' + esc(d.message || 'Your presence will make our celebration even more special.') + '</p><div class="ws-event-grid">' + (eventCards || '<p>Celebration details coming soon.</p>') + '</div></div></section>' +
+        (hasGallery ? '<section class="ws-section ws-gallery' + designClass('gallery') + '" id="gallery"><div class="ws-content"><div class="ws-section-eyebrow">LITTLE THINGS, LOVELY MEMORIES</div><h2>Our Moments</h2><p class="ws-section-intro">A few of our favourite chapters.</p>' + (showGalleryEmpty ? placeholder : '<div class="ws-photo-grid">' + gallery + '</div>') + '</div></section>' : '') +
+        (hasVenue ? '<section class="ws-section ws-venue' + designClass('venue') + '" id="venue"><div class="ws-content"><div class="ws-section-eyebrow">COME CELEBRATE WITH US</div><h2>Find Your Way</h2><p class="ws-section-intro">' + esc(d.travelNote || 'We cannot wait to welcome you.') + '</p><div class="ws-venue-grid">' + venues.map((v,i) => '<article class="ws-venue-card"><span class="ws-venue-icon" aria-hidden="true">⌖</span><h3>' + esc(v) + '</h3><a class="ws-directions" href="' + esc(directions(v)) + '" target="_blank" rel="noopener noreferrer">Open directions ↗</a></article>').join('') + '</div></div></section>' : '') +
+        '<section class="ws-section ws-closing' + designClass('closing') + '" id="closing"><div class="ws-content"><div class="ws-small-flower">❦</div><div class="ws-section-eyebrow">WITH ALL OUR LOVE</div><h2>Every beautiful beginning<br />is better with you.</h2><p>Your presence would mean the world to us.</p><div class="ws-closing-signature">' + names + '</div></div></section>' +
       '</main><footer class="ws-footer"><span>' + logo + '</span><span>Made with ♥ on Everafter Studio</span><a href="#welcome">Back to top ↑</a></footer>' +
     '</div>';
   }

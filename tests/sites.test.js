@@ -73,3 +73,28 @@ test('app and shared renderer have valid JavaScript syntax', async () => {
   for (const filename of ['app.js','wedding-site.js'])
     assert.doesNotThrow(()=>new Script(readFileSync(new URL('../public/'+filename,import.meta.url),'utf8')));
 });
+
+test('validates and retains per-section design selections for publishing', () => {
+ const design={hero:'split',story:'letter',events:'timeline',gallery:'mosaic',venue:'list',closing:'framed'};
+ assert.deepEqual(validate({...valid,sectionDesigns:design}).sectionDesigns,design);
+ assert.equal(validate(valid).sectionDesigns.events,'cards');
+ assert.throws(()=>validate({...valid,sectionDesigns:{hero:'<script>'}}),/Invalid section design/);
+ assert.throws(()=>validate({...valid,sectionDesigns:{unknown:'cards'}}),/Invalid section design/);
+ assert.throws(()=>validate({...valid,sectionDesigns:[]}),/Invalid section design/);
+});
+test('shared website renderer switches styles per section independently and safely', async () => {
+ const {readFileSync}=await import('node:fs');
+ const {runInNewContext}=await import('node:vm');
+ const context={window:{},Date,Intl,Map};
+ runInNewContext(readFileSync(new URL('../public/wedding-site.js',import.meta.url),'utf8'),context);
+ const opts={...valid,story:'Our beginning',photos:['https://example.org/one.jpg'],sectionDesigns:{
+  hero:'framed',story:'editorial',events:'rows',gallery:'filmstrip',venue:'highlight',closing:'banner'
+ }};
+ const rendered=context.window.EverafterSite.render(opts);
+ for (const cls of ['ws-hero ws-layout-framed','ws-story ws-layout-editorial',
+ 'ws-celebrations ws-layout-rows','ws-gallery ws-layout-filmstrip',
+ 'ws-venue ws-layout-highlight','ws-closing ws-layout-banner']) assert.ok(rendered.includes(cls),cls);
+ const bad=context.window.EverafterSite.render({...opts,sectionDesigns:{hero:'bad" onclick="evil()'}});
+ assert.ok(bad.includes('ws-hero ws-layout-centered'));
+ assert.ok(!bad.includes('onclick="evil()'));
+});

@@ -73,8 +73,22 @@
     if (state) state.textContent = draft.colors ? 'Custom palette applied' : 'Using original theme colors';
     updateColorNotice();
   }
+  const SECTION_LAYOUTS = {
+    hero: [['centered','Romantic Center','Classic centered names'],['split','Editorial Split','Contemporary two-column welcome'],['framed','Invitation Frame','Formal bordered welcome']],
+    story: [['classic','Poetic Center','Soft centered narrative'],['editorial','Editorial','Left-aligned magazine style'],['letter','Love Letter','Personal letter on paper']],
+    events: [['cards','Event Cards','Individual event cards'],['timeline','Timeline','Events arranged chronologically'],['rows','Elegant List','Minimal, numbered rows']],
+    gallery: [['grid','Photo Grid','Balanced photo tiles'],['mosaic','Mosaic','Playful editorial arrangement'],['filmstrip','Filmstrip','Horizontal photo sequence']],
+    venue: [['cards','Venue Cards','Separate venue panels'],['list','Travel List','Simple vertical directions'],['highlight','Destination','Large highlighted destination']],
+    closing: [['classic','Simple Sign-off','Centered closing message'],['framed','Framed Blessing','A decorative farewell'],['banner','Statement','Full-width modern finale']]
+  };
+  const DEFAULT_SECTION_LAYOUTS = Object.fromEntries(Object.entries(SECTION_LAYOUTS).map(([key,options])=>[key,options[0][0]]));
+  function cleanSectionLayouts(input) {
+    return Object.fromEntries(Object.entries(SECTION_LAYOUTS).map(([key,options])=>[
+      key, options.some(([id])=>id===input?.[key]) ? input[key] : DEFAULT_SECTION_LAYOUTS[key]
+    ]));
+  }
   const EXAMPLE = {
-    theme: 'blossom', colors: null, partner1: 'Anaya', partner2: 'Kabir',
+    theme: 'blossom', colors: null, sectionDesigns:{hero:'centered',story:'classic',events:'cards',gallery:'grid',venue:'cards',closing:'classic'}, partner1: 'Anaya', partner2: 'Kabir',
     tagline: 'A little destiny, a lifetime of love.',
     message: 'Together with our families, we invite you to celebrate the beginning of our forever.',
     story: 'Our paths crossed, our families brought us together, and a beautiful journey began. From that first conversation to the memories we are yet to make, we are so grateful to share this chapter with you.',
@@ -98,6 +112,7 @@
   const normalize = (v) => ({
     theme: validTheme(v?.theme),
     colors: validColors(v?.colors),
+    sectionDesigns: cleanSectionLayouts(v?.sectionDesigns),
     partner1: String(v?.partner1 ?? '').slice(0, 70),
     partner2: String(v?.partner2 ?? '').slice(0, 70),
     tagline: String(v?.tagline ?? '').slice(0, 180),
@@ -172,6 +187,15 @@
     ];
     return `<div class="section-kicker">Step 04 · More of your story</div><h2 class="editor-title">Make room for every chapter.</h2><p class="editor-hint">Your invitation is now a complete multi-section website. Choose which sections your guests will see.</p>` +
       switches.map(([key,title,desc]) => `<div class="ws-section-toggle"><div><label for="toggle-${key}">${title}</label><p>${desc}</p></div><input type="checkbox" id="toggle-${key}" data-section="${key}" ${draft.sections[key] ? 'checked' : ''} /></div>`).join('') +
+      `<div class="section-layout-panel"><h3>Choose each section's design</h3><p class="ws-editor-note">Mix designs freely. Every combination inherits your selected theme and colors.</p>` +
+      Object.entries(SECTION_LAYOUTS).map(([key,choices]) => {
+        const displayName = {hero:'Welcome',story:'Our Story',events:'Celebrations',gallery:'Gallery',venue:'Venue',closing:'Closing'}[key];
+        const disabled = key==='story' && !draft.sections.story || key==='gallery' && !draft.sections.gallery || key==='venue' && !draft.sections.venue;
+        return `<fieldset class="layout-choice" ${disabled ? 'disabled' : ''}><legend>${displayName}</legend><div class="layout-choice-grid">` +
+          choices.map(([id,title,description],index) =>
+            `<button type="button" class="layout-choice-card ${draft.sectionDesigns[key]===id ? 'active' : ''}" data-layout-section="${key}" data-layout-id="${id}" aria-pressed="${draft.sectionDesigns[key]===id}" title="${description}"><span class="layout-sketch sketch-${key}-${id}" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="layout-choice-name">${title}</span></button>`).join('') +
+          `</div></fieldset>`;
+      }).join('') + `</div>` +
       `<div class="field" style="margin-top:20px"><label for="storyField">Your story</label><textarea id="storyField" rows="5" data-field="story" maxlength="1200" placeholder="How it all began...">${escapeHtml(draft.story)}</textarea></div>` +
       `<div class="field"><label for="travelField">A note for your guests</label><textarea id="travelField" rows="3" data-field="travelNote" maxlength="240" placeholder="Travel notes, if any...">${escapeHtml(draft.travelNote)}</textarea></div>` +
       `<div class="ws-photo-edit"><h3>Gallery photographs (up to six)</h3><p class="ws-editor-note">Paste public HTTPS image links. Image uploads will be added in the next phase.</p>` +
@@ -238,6 +262,15 @@
       }).catch(() => notice('The published site could not be loaded. Your local draft is still available.'));
     }
     $('#editor').addEventListener('click', (evt) => {
+      const layout = evt.target.closest('[data-layout-section][data-layout-id]');
+      if (layout) {
+        const section = layout.dataset.layoutSection, design = layout.dataset.layoutId;
+        if (SECTION_LAYOUTS[section]?.some(([id])=>id===design)) {
+          draft.sectionDesigns[section]=design;
+          refresh(); setStep(3);
+        }
+        return;
+      }
       const theme = evt.target.closest('[data-theme]');
       if (theme) { draft.theme = theme.dataset.theme; refresh(); setStep(0); syncColorControls(); return; }
       const preset = evt.target.closest('[data-palette]');
