@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/wedding-site.css" />
+  <script defer src="/wedding-site.js"></script>
   <script defer src="/app.js"></script>
 </head>
 <body>
@@ -28,7 +30,8 @@
           <button class="step active" data-step="0" type="button"><span class="step-num">01</span><span>Theme</span></button>
           <button class="step" data-step="1" type="button"><span class="step-num">02</span><span>The couple</span></button>
           <button class="step" data-step="2" type="button"><span class="step-num">03</span><span>Celebrations</span></button>
-          <button class="step" data-step="3" type="button"><span class="step-num">04</span><span>Publish</span></button>
+          <button class="step" data-step="3" type="button"><span class="step-num">04</span><span>Sections</span></button>
+          <button class="step" data-step="4" type="button"><span class="step-num">05</span><span>Publish</span></button>
         </nav>
         <div id="editor" class="editor"></div>
         <div id="appNotice" class="notice" role="status" aria-live="polite" hidden></div>
@@ -40,7 +43,7 @@
       </section>
       <aside class="preview-column" aria-label="Live invitation preview">
         <div class="preview-toolbar"><div><span class="live-dot"></span> LIVE PREVIEW <small>Changes appear instantly</small></div><div class="preview-toggle"><button type="button" data-size="phone" class="selected" aria-label="Phone preview" aria-pressed="true">▯</button><button type="button" data-size="desktop" aria-label="Desktop preview" aria-pressed="false">▭</button></div></div>
-        <div id="previewShell" class="preview-shell phone"><div id="previewStage" class="invitation blossom"></div></div>
+        <div id="previewShell" class="preview-shell phone"><div id="previewStage" class="wedding-preview-host"></div></div>
         <div class="preview-caption">A glimpse of your very own wedding website <span aria-hidden="true">✦</span></div>
       </aside>
     </main>
