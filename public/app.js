@@ -12,6 +12,10 @@
     theme: 'blossom', partner1: 'Anaya', partner2: 'Kabir',
     tagline: 'A little destiny, a lifetime of love.',
     message: 'Together with our families, we invite you to celebrate the beginning of our forever.',
+    story: 'Our paths crossed, our families brought us together, and a beautiful journey began. From that first conversation to the memories we are yet to make, we are so grateful to share this chapter with you.',
+    travelNote: 'We would be delighted to celebrate with you.',
+    sections: {story:true,gallery:true,venue:true},
+    photos: [],
     events: [
       { id: 'e1', name: 'Haldi', date: '2026-12-10', time: '11:00', venue: 'The Garden Courtyard, Jaipur' },
       { id: 'e2', name: 'Sangeet', date: '2026-12-10', time: '19:00', venue: 'The Royal Ballroom, Jaipur' },
@@ -32,6 +36,10 @@
     partner2: String(v?.partner2 ?? '').slice(0, 70),
     tagline: String(v?.tagline ?? '').slice(0, 180),
     message: String(v?.message ?? '').slice(0, 240),
+    story: String(v?.story ?? '').slice(0, 1200),
+    travelNote: String(v?.travelNote ?? '').slice(0, 240),
+    sections: {story:v?.sections?.story !== false,gallery:v?.sections?.gallery !== false,venue:v?.sections?.venue !== false},
+    photos: safeArray(v?.photos).filter(p => typeof p === 'string').slice(0, 6).map(p => p.slice(0, 2048)),
     events: safeArray(v?.events).slice(0, 12).map((e, i) => ({
       id: String(e.id || `e${i}`), name: String(e.name ?? '').slice(0, 60),
       date: String(e.date ?? '').slice(0, 10), time: String(e.time ?? '').slice(0, 5),
@@ -68,7 +76,7 @@
     }).join('');
     return `<div class="invite-inner"><p class="invite-overline">Together with their families</p><div class="invite-ornament" aria-hidden="true">✦</div><div class="invite-names">${names}</div>${d.tagline.trim() ? `<p class="invite-tagline">${escapeHtml(d.tagline.trim())}</p>` : ''}<div class="invite-divider"></div>${d.message.trim() ? `<p class="invite-welcome">${escapeHtml(d.message.trim())}</p>` : ''}<h2 class="invite-heading">A celebration in ${d.events.length === 1 ? 'one beautiful act' : `${d.events.length} beautiful acts`}</h2>${events || '<p class="invite-welcome">Your celebrations will appear here.</p>'}<p class="invite-signoff">A beautiful beginning, made sweeter by your presence.</p><div class="invite-end" aria-hidden="true">❦</div></div>`;
   }
-  function preview() { const stage = $('#previewStage'); if (!stage) return; stage.className = 'invitation ' + validTheme(draft.theme); stage.innerHTML = renderInvitation(draft); }
+  function preview() { const stage = $('#previewStage'); if (!stage) return; const keep = stage.scrollTop; stage.innerHTML = window.EverafterSite.render(draft, {preview:true}); stage.scrollTop = keep; }
   function themeEditor() {
     return `<div class="section-kicker">Step 01 · Set the mood</div><h2 class="editor-title">Find your forever aesthetic.</h2><p class="editor-hint">Three unique invitations. One beautiful love story. You can switch themes anytime.</p><div class="theme-picker">${THEMES.map(t => `<button type="button" class="theme-option ${draft.theme === t.id ? 'active' : ''}" data-theme="${t.id}" aria-pressed="${draft.theme === t.id}"><div class="theme-picture ${t.id}"><span class="mini-top">THE WEDDING OF</span><span class="mini-names">A &amp; K</span><span class="mini-date">FOREVER BEGINS HERE</span></div><span class="theme-label">${t.name}</span><span class="theme-desc">${t.desc}</span></button>`).join('')}</div>`;
   }
@@ -81,9 +89,23 @@
   function eventsEditor() {
     return `<div class="section-kicker">Step 03 · The celebrations</div><h2 class="editor-title">Every moment deserves its place.</h2><p class="editor-hint">Add your Haldi, Sangeet, wedding, or any other event. Up to 12 celebrations.</p><div class="events-list">${draft.events.map((event, index) => `<div class="event-editor"><div class="event-head"><span class="event-count">Celebration ${String(index + 1).padStart(2, '0')}</span><button type="button" class="text-button" data-remove-event="${attribute(event.id)}" aria-label="Remove ${attribute(event.name || 'event')}">Remove</button></div><div class="field"><label for="event-name-${index}">Event name</label><input id="event-name-${index}" data-event-id="${attribute(event.id)}" data-event-field="name" maxlength="60" value="${attribute(event.name)}" placeholder="Haldi, Sangeet, Wedding..." /></div><div class="field-grid"><div class="field"><label for="event-date-${index}">Date</label><input id="event-date-${index}" type="date" data-event-id="${attribute(event.id)}" data-event-field="date" value="${attribute(event.date)}" /></div><div class="field"><label for="event-time-${index}">Time</label><input id="event-time-${index}" type="time" data-event-id="${attribute(event.id)}" data-event-field="time" value="${attribute(event.time)}" /></div></div><div class="field"><label for="event-venue-${index}">Venue</label><input id="event-venue-${index}" data-event-id="${attribute(event.id)}" data-event-field="venue" maxlength="140" value="${attribute(event.venue)}" placeholder="Venue name, city" /></div></div>`).join('')}</div><button class="add-event" type="button" id="addEvent" ${draft.events.length >= 12 ? 'disabled' : ''}>+ Add another celebration</button>`;
   }
+  function sectionsEditor() {
+    const switches = [
+      ['story','Our Story','A dedicated section with your journey together.'],
+      ['gallery','Photo Gallery','Show your favourite moments using public photo links.'],
+      ['venue','Venue & Directions','Automatically use locations from the event details.']
+    ];
+    return `<div class="section-kicker">Step 04 · More of your story</div><h2 class="editor-title">Make room for every chapter.</h2><p class="editor-hint">Your invitation is now a complete multi-section website. Choose which sections your guests will see.</p>` +
+      switches.map(([key,title,desc]) => `<div class="ws-section-toggle"><div><label for="toggle-${key}">${title}</label><p>${desc}</p></div><input type="checkbox" id="toggle-${key}" data-section="${key}" ${draft.sections[key] ? 'checked' : ''} /></div>`).join('') +
+      `<div class="field" style="margin-top:20px"><label for="storyField">Your story</label><textarea id="storyField" rows="5" data-field="story" maxlength="1200" placeholder="How it all began...">${escapeHtml(draft.story)}</textarea></div>` +
+      `<div class="field"><label for="travelField">A note for your guests</label><textarea id="travelField" rows="3" data-field="travelNote" maxlength="240" placeholder="Travel notes, if any...">${escapeHtml(draft.travelNote)}</textarea></div>` +
+      `<div class="ws-photo-edit"><h3>Gallery photographs (up to six)</h3><p class="ws-editor-note">Paste public HTTPS image links. Image uploads will be added in the next phase.</p>` +
+      draft.photos.map((photo,i) => `<div class="ws-photo-field"><input type="url" aria-label="Photo link ${i+1}" data-photo-index="${i}" value="${attribute(photo)}" placeholder="https://example.com/photo.jpg" /><button type="button" aria-label="Remove photo ${i+1}" data-remove-photo="${i}">×</button></div>`).join('') +
+      `<button type="button" class="add-event" data-add-photo ${draft.photos.length >= 6 ? 'disabled' : ''}>+ Add photo link</button></div>`;
+  }
   function publishEditor() {
     const link = published ? `<div class="published-links"><h3>✓ Your website is published</h3><div class="share-url">${escapeHtml(published.url)}</div><div class="published-actions"><button type="button" id="copyShare">Copy link</button><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open website ↗</a></div></div>` : '';
-    return `<div class="section-kicker">Step 04 · Almost forever</div><h2 class="editor-title">Ready to share the joy?</h2><p class="editor-hint">One more look before your wedding website goes live.</p><div class="publish-summary"><div class="summary-line"><span>Invitation for</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div><div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(t => t.id === draft.theme)?.name || 'Blossom')}</strong></div><div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div><div class="summary-line"><span>Suggested link</span><strong>/s/${escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div></div><p class="publish-help">Publishing creates a public, shareable invitation. Anyone with the link can view event details. Your private edit key stays in this browser; keep a copy before clearing browser data.</p>${link}`;
+    return `<div class="section-kicker">Step 05 · Almost forever</div><h2 class="editor-title">Ready to share the joy?</h2><p class="editor-hint">One more look before your wedding website goes live.</p><div class="publish-summary"><div class="summary-line"><span>Invitation for</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div><div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(t => t.id === draft.theme)?.name || 'Blossom')}</strong></div><div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div><div class="summary-line"><span>Suggested link</span><strong>/s/${escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div></div><p class="publish-help">Publishing creates a public, shareable invitation. Anyone with the link can view event details. Your private edit key stays in this browser; keep a copy before clearing browser data.</p>${link}`;
   }
   function validatePage(specificStep = step) {
     if (specificStep >= 1 && (!draft.partner1.trim() || !draft.partner2.trim())) return 'Please enter both names before continuing.';
@@ -100,18 +122,18 @@
   }
   function notice(message) { const n = $('#appNotice'); n.textContent = message; n.hidden = !message; }
   function setStep(next) {
-    step = Math.max(0, Math.min(3, next));
-    $('#editor').innerHTML = [themeEditor, coupleEditor, eventsEditor, publishEditor][step]();
+    step = Math.max(0, Math.min(4, next));
+    $('#editor').innerHTML = [themeEditor, coupleEditor, eventsEditor, sectionsEditor, publishEditor][step]();
     $$('.step').forEach(b => { const selected = +b.dataset.step === step; b.classList.toggle('active', selected); b.setAttribute('aria-current', selected ? 'step' : 'false'); });
     const back = $('#backButton'); back.style.visibility = step === 0 ? 'hidden' : 'visible';
-    const nextButton = $('#nextButton'); nextButton.textContent = step === 3 ? published ? 'Update website ↗' : 'Publish website ↗' : 'Continue →';
+    const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? published ? 'Update website ↗' : 'Publish website ↗' : 'Continue →';
     nextButton.disabled = publishBusy;
     notice('');
   }
-  function refresh() { saveDraft(); preview(); if (step === 3) setStep(3); }
+  function refresh() { saveDraft(); preview(); if (step === 4) setStep(4); }
   async function publishSite() {
     if (publishBusy) return;
-    const error = validatePage(3);
+    const error = validatePage(4);
     if (error) return notice(error);
     publishBusy = true; $('#nextButton').disabled = true; $('#nextButton').textContent = 'Publishing…'; notice('');
     try {
@@ -128,7 +150,7 @@
       if (result.editToken) storeSite(result.slug, result.editToken);
       published = { slug: result.slug, url: new URL(result.url, location.origin).href };
       notice('');
-      setStep(3);
+      setStep(4);
     } catch (err) {
       notice(err instanceof TypeError || /Publishing failed \(40[45]|501\)/.test(err.message) ? 'Publishing is not available in static preview mode. Deploy to Cloudflare Pages and bind a D1 database to enable it.' : err.message);
     } finally { publishBusy = false; $('#nextButton').disabled = false; $('#nextButton').textContent = published ? 'Update website ↗' : 'Publish website ↗'; }
@@ -154,6 +176,9 @@
         refresh(); setStep(2);
         const list = $('.events-list'); if (list) list.scrollTop = list.scrollHeight;
       }
+      if (evt.target.closest('[data-add-photo]')) { if (draft.photos.length < 6) { draft.photos.push(''); refresh(); setStep(3); } return; }
+      const photoRemove = evt.target.closest('[data-remove-photo]');
+      if (photoRemove) { draft.photos.splice(+photoRemove.dataset.removePhoto,1); refresh(); setStep(3); return; }
       if (evt.target.closest('#copyShare') && published) {
         navigator.clipboard?.writeText(published.url).then(() => notice('Website link copied.')).catch(() => notice('Copy the link shown above.'));
       }
@@ -161,15 +186,17 @@
     $('#editor').addEventListener('input', (evt) => {
       const el = evt.target;
       if (el.dataset.field) draft[el.dataset.field] = el.value;
+      if (el.dataset.photoIndex !== undefined) draft.photos[+el.dataset.photoIndex] = el.value;
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; }
       notice(''); refresh();
     });
     $('#editor').addEventListener('change', (evt) => {
       const el = evt.target;
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; refresh(); }
+      if (el.dataset.section) { draft.sections[el.dataset.section] = el.checked; refresh(); }
     });
     $('#backButton').addEventListener('click', () => setStep(step - 1));
-    $('#nextButton').addEventListener('click', () => { if (step === 3) return publishSite(); const error = validatePage(step); if (error) return notice(error); setStep(step + 1); });
+    $('#nextButton').addEventListener('click', () => { if (step === 4) return publishSite(); const error = validatePage(step); if (error) return notice(error); setStep(step + 1); });
     $$('.step').forEach(b => b.addEventListener('click', () => { const to = +b.dataset.step; if (to > step && validatePage(to - 1)) return notice(validatePage(to - 1)); setStep(to); }));
     $('#headerPreview').addEventListener('click', () => { $('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
     $$('.preview-toggle button').forEach(b => b.addEventListener('click', () => {
@@ -186,7 +213,7 @@
       if (!response.ok) throw Error('We couldn’t find this invitation.');
       const data = normalize(await response.json());
       document.title = `${data.partner1} & ${data.partner2} — Wedding Invitation`;
-      mount.innerHTML = `<div class="published-top"><a class="published-brand" href="/">✳ everafter studio</a><a href="/">Create your own ↗</a></div><main class="invitation published-card ${data.theme}">${renderInvitation(data)}</main><div class="published-foot">Made with love · Everafter Studio</div>`;
+      mount.innerHTML = window.EverafterSite.render(data);
     } catch (e) {
       mount.innerHTML = `<div class="published-error"><h1>A little detour…</h1><p>${escapeHtml(e.message)}</p><a href="/">Return to the studio</a></div>`;
     }
