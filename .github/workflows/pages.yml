@@ -1,0 +1,45 @@
+name: Deploy builder preview to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build static preview
+        run: |
+          mkdir -p pages-dist
+          cp -R public/. pages-dist/
+          # The hosted site is in a project subpath rather than the domain root.
+          sed -i 's|href="/styles.css"|href="./styles.css"|; s|src="/app.js"|src="./app.js"|' pages-dist/index.html
+          touch pages-dist/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: pages-dist
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
