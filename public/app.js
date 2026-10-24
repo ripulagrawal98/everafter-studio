@@ -158,85 +158,62 @@
     return `<div class="invite-inner"><p class="invite-overline">Together with their families</p><div class="invite-ornament" aria-hidden="true">✦</div><div class="invite-names">${names}</div>${d.tagline.trim() ? `<p class="invite-tagline">${escapeHtml(d.tagline.trim())}</p>` : ''}<div class="invite-divider"></div>${d.message.trim() ? `<p class="invite-welcome">${escapeHtml(d.message.trim())}</p>` : ''}<h2 class="invite-heading">A celebration in ${d.events.length === 1 ? 'one beautiful act' : `${d.events.length} beautiful acts`}</h2>${events || '<p class="invite-welcome">Your celebrations will appear here.</p>'}<p class="invite-signoff">A beautiful beginning, made sweeter by your presence.</p><div class="invite-end" aria-hidden="true">❦</div></div>`;
   }
   function preview() {
-    const stage = $('#previewStage');
-    if (!stage) return;
-    const keep = stage.scrollTop;
+    const stage = $('#previewStage'), column = $('.preview-column');
+    if (!stage || !column) return;
+    const keep = column.scrollTop;
     stage.innerHTML = window.EverafterSite.render(draft, {preview:true});
-    stage.scrollTop = keep;
+    column.scrollTop = keep;
     requestAnimationFrame(syncPreviewScroll);
   }
-  // The vertical rail is independent of the editor's page scrolling.
-  function syncPreviewScroll() {
-    const stage = $('#previewStage'), slider = $('#previewVerticalSlider');
-    if (!stage || !slider) return;
-    const limit = Math.max(0, stage.scrollHeight - stage.clientHeight);
-    const position = Math.min(Math.max(0, stage.scrollTop), limit);
+  // Both rails control the complete column, including its heading, content and actions.
+  // Neither the editor body nor the invitation frame is an additional scroll container.
+  function syncColumnScroll(column, slider, up, down) {
+    if (!column || !slider) return;
+    const limit = Math.max(0, column.scrollHeight - column.clientHeight);
+    const position = Math.min(Math.max(0, column.scrollTop), limit);
     slider.value = String(limit ? Math.round(position / limit * 1000) : 0);
     slider.disabled = limit <= 1;
-    const up = $('#previewScrollUp'), down = $('#previewScrollDown');
     if (up) up.disabled = position <= 1;
     if (down) down.disabled = limit <= 1 || position >= limit - 1;
+  }
+  function syncPreviewScroll() {
+    syncColumnScroll($('.preview-column'), $('#previewVerticalSlider'), $('#previewScrollUp'), $('#previewScrollDown'));
   }
   function syncEditorScroll() {
-    const pane = $('#editorScrollPane'), slider = $('#editorVerticalSlider');
-    if (!pane || !slider) return;
-    const limit = Math.max(0, pane.scrollHeight - pane.clientHeight);
-    const position = Math.min(Math.max(0, pane.scrollTop), limit);
-    slider.value = String(limit ? Math.round(position / limit * 1000) : 0);
-    slider.disabled = limit <= 1;
-    const up = $('#editorScrollUp'), down = $('#editorScrollDown');
-    if (up) up.disabled = position <= 1;
-    if (down) down.disabled = limit <= 1 || position >= limit - 1;
+    syncColumnScroll($('.workspace'), $('#editorVerticalSlider'), $('#editorScrollUp'), $('#editorScrollDown'));
+  }
+  function setupColumnScroll(column, slider, up, down, sync, changeTarget) {
+    if (!column || !slider) return;
+    column.addEventListener('scroll', sync, {passive:true});
+    slider.addEventListener('input', () => {
+      const limit = Math.max(0, column.scrollHeight - column.clientHeight);
+      column.scrollTop = limit * (Number(slider.value) / 1000);
+      sync();
+    });
+    const pageScroll = direction => column.scrollBy({
+      top:direction * Math.max(180, column.clientHeight * 0.7), behavior:'smooth'
+    });
+    up.addEventListener('click', () => pageScroll(-1));
+    down.addEventListener('click', () => pageScroll(1));
+    window.addEventListener('resize', sync);
+    if ('ResizeObserver' in window) {
+      const resizeObserver = new ResizeObserver(() => requestAnimationFrame(sync));
+      resizeObserver.observe(column);
+      if (changeTarget) resizeObserver.observe(changeTarget);
+    }
+    if (changeTarget && 'MutationObserver' in window) {
+      const mutationObserver = new MutationObserver(() => requestAnimationFrame(sync));
+      mutationObserver.observe(changeTarget, {childList:true,subtree:false});
+    }
+    sync();
   }
   function setupEditorScroll() {
-    const pane = $('#editorScrollPane'), slider = $('#editorVerticalSlider');
-    if (!pane || !slider) return;
-    pane.addEventListener('scroll', syncEditorScroll, {passive:true});
-    slider.addEventListener('input', () => {
-      const limit = Math.max(0, pane.scrollHeight - pane.clientHeight);
-      pane.scrollTop = limit * (Number(slider.value) / 1000);
-      syncEditorScroll();
-    });
-    const scrollStep = (direction) => {
-      pane.scrollBy({top: direction * Math.max(180, pane.clientHeight * 0.65), behavior:'smooth'});
-    };
-    $('#editorScrollUp').addEventListener('click', () => scrollStep(-1));
-    $('#editorScrollDown').addEventListener('click', () => scrollStep(1));
-    window.addEventListener('resize', syncEditorScroll);
-    // Recalculate after content is swapped by the step editor.
-    const observer = new MutationObserver(() => requestAnimationFrame(syncEditorScroll));
-    observer.observe($('#editor'), {childList:true});
-    syncEditorScroll();
+    setupColumnScroll($('.workspace'), $('#editorVerticalSlider'), $('#editorScrollUp'),
+      $('#editorScrollDown'), syncEditorScroll, $('#editor'));
   }
   function setupPreviewScroll() {
-    const stage = $('#previewStage'), slider = $('#previewVerticalSlider');
-    if (!stage || !slider) return;
-    stage.addEventListener('scroll', syncPreviewScroll, {passive:true});
-    slider.addEventListener('input', () => {
-      const limit = Math.max(0, stage.scrollHeight - stage.clientHeight);
-      stage.scrollTop = limit * (Number(slider.value) / 1000);
-      syncPreviewScroll();
-    });
-    const scrollStep = (direction) => {
-      stage.scrollBy({top: direction * Math.max(180, stage.clientHeight * 0.65), behavior:'smooth'});
-    };
-    $('#previewScrollUp').addEventListener('click', () => scrollStep(-1));
-    $('#previewScrollDown').addEventListener('click', () => scrollStep(1));
-    window.addEventListener('resize', syncPreviewScroll);
-    if ('ResizeObserver' in window) {
-      const observer = new ResizeObserver(syncPreviewScroll);
-      observer.observe(stage);
-      const watchPage = () => {
-        observer.disconnect();
-        observer.observe(stage);
-        if (stage.firstElementChild) observer.observe(stage.firstElementChild);
-        syncPreviewScroll();
-      };
-      // Content is re-rendered on every draft edit; refresh the height observer.
-      const contentObserver = new MutationObserver(watchPage);
-      contentObserver.observe(stage, {childList:true});
-    }
-    syncPreviewScroll();
+    setupColumnScroll($('.preview-column'), $('#previewVerticalSlider'), $('#previewScrollUp'),
+      $('#previewScrollDown'), syncPreviewScroll, $('#previewStage'));
   }
   function themeEditor() {
     const colors = activeColors();
@@ -309,7 +286,7 @@
     const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? published ? 'Update website ↗' : 'Publish website ↗' : 'Continue →';
     nextButton.disabled = publishBusy;
     notice('');
-    if (oldStep !== step && $('#editorScrollPane')) $('#editorScrollPane').scrollTop = 0;
+    if (oldStep !== step && $('.workspace')) $('.workspace').scrollTop = 0;
     requestAnimationFrame(syncEditorScroll);
   }
   function refresh() { saveDraft(); preview(); if (step === 4) setStep(4); }
@@ -408,7 +385,7 @@
     $('#backButton').addEventListener('click', () => setStep(step - 1));
     $('#nextButton').addEventListener('click', () => { if (step === 4) return publishSite(); const error = validatePage(step); if (error) return notice(error); setStep(step + 1); });
     $$('.step').forEach(b => b.addEventListener('click', () => { const to = +b.dataset.step; if (to > step && validatePage(to - 1)) return notice(validatePage(to - 1)); setStep(to); }));
-    $('#headerPreview').addEventListener('click', () => { $('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    $('#headerPreview').addEventListener('click', () => { const pane=$('.preview-column'); pane.scrollTo({top:0,behavior:'smooth'}); pane.focus({preventScroll:true}); });
     $$('.preview-toggle button').forEach(b => b.addEventListener('click', () => {
       $('#previewShell').className = 'preview-shell ' + b.dataset.size;
       $('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });

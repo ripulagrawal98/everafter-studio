@@ -99,27 +99,24 @@ test('shared website renderer switches styles per section independently and safe
  assert.ok(!bad.includes('onclick="evil()'));
 });
 
-test('builder preview provides an independent vertical slider with arrow controls', async () => {
- const {readFileSync} = await import('node:fs');
- const markup = readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
- const script = readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
- for (const id of ['previewStage','previewVerticalSlider','previewScrollUp','previewScrollDown'])
-   assert.ok(markup.includes('id="'+id+'"'), 'Missing '+id);
- assert.ok(script.includes("stage.addEventListener('scroll', syncPreviewScroll"));
- assert.ok(script.includes("slider.addEventListener('input'"));
- assert.ok(script.includes("stage.scrollTop = limit * (Number(slider.value) / 1000)"));
-});
 
-test('editor and preview have two separate independent vertical scroll rails',async()=>{
-  const {readFileSync}=await import('node:fs');
+test('editor and preview have separate, full-column scroll rails', async () => {
+  const {readFileSync} = await import('node:fs');
   const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
-  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  for (const id of ['editorScrollPane','editorScrollUp','editorScrollDown','editorVerticalSlider','previewStage','previewScrollUp','previewScrollDown','previewVerticalSlider'])
-    assert.match(html,new RegExp('id="'+id+'"'));
-  assert.match(app,/pane\.addEventListener\('scroll', syncEditorScroll/);
-  assert.match(app,/stage\.addEventListener\('scroll', syncPreviewScroll/);
-  assert.match(app,/pane\.scrollTop = limit \* \(Number\(slider\.value\) \/ 1000\)/);
-  assert.match(app,/stage\.scrollTop = limit \* \(Number\(slider\.value\) \/ 1000\)/);
-  assert.match(app,/setupEditorScroll\(\)/);
-  assert.match(app,/setupPreviewScroll\(\)/);
+  const script=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const style=readFileSync(new URL('../public/wedding-site.css',import.meta.url),'utf8');
+  for (const id of ['editorScrollPane','editorVerticalSlider','editorScrollUp','editorScrollDown',
+    'previewStage','previewVerticalSlider','previewScrollUp','previewScrollDown']) {
+    assert.ok(html.includes('id="'+id+'"'),id);
+  }
+  assert.ok(html.includes('class="workspace" tabindex="0"'));
+  assert.ok(html.includes('class="preview-column" tabindex="0"'));
+  assert.match(script,/setupColumnScroll\(\$\('\.workspace'\)/);
+  assert.match(script,/setupColumnScroll\(\$\('\.preview-column'\)/);
+  assert.match(script,/column\.addEventListener\('scroll', sync/);
+  assert.match(script,/column\.scrollTop = limit \* \(Number\(slider\.value\) \/ 1000\)/);
+  assert.match(style,/#builderApp \.workspace, #builderApp \.preview-column/);
+  assert.match(style,/#builderApp \.preview-shell\.phone \.wedding-preview-host/);
+  assert.match(style,/height:auto; min-height:660px; overflow:visible/);
+  assert.doesNotMatch(script,/stage\.addEventListener\('scroll'/);
 });

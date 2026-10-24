@@ -305,3 +305,78 @@ html { scroll-behavior:smooth }
   .editor-scroll-controls{flex-basis:35px;}
   #editorVerticalSlider{width:19px;}
 }
+
+/* COMPLETE TWO-COLUMN SCROLLING — each HALF owns exactly one scroll position. */
+#builderApp { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; --studio-pane-height:calc(100dvh - 165px); }
+#builderApp .site-header { flex:0 0 82px; }
+#builderApp .app-footer { flex:0 0 61px; }
+#builderApp .app-layout {
+  flex:1 1 auto; height:auto; min-height:0; max-height:none;
+  overflow:hidden; align-items:stretch;
+}
+#builderApp .workspace, #builderApp .preview-column {
+  min-width:0; min-height:0; height:100%;
+  overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain;
+  scrollbar-width:thin; scrollbar-color:#c8b4b7 transparent;
+  scroll-behavior:smooth;
+  position:relative;
+}
+#builderApp .workspace {
+  display:block; padding:25px 13px 50px clamp(20px,4vw,75px);
+}
+#builderApp .editor-pane-layout {
+  display:flex; height:auto; min-height:100%; align-items:flex-start;
+  width:100%; gap:10px;
+}
+#builderApp .editor-scroll-pane {
+  flex:1 1 auto; height:auto; min-height:0;
+  overflow:visible; padding:30px clamp(12px,2vw,40px) 10px 0;
+}
+#builderApp .editor-scroll-controls {
+  flex:0 0 40px; position:sticky; top:10px;
+  height:min(660px,calc(100dvh - 170px));
+  max-height:calc(100dvh - 170px);
+  align-self:flex-start;
+}
+#builderApp .preview-column {
+  display:flex; flex-direction:column; justify-content:flex-start;
+  align-items:center; padding:25px clamp(16px,3vw,55px) 55px;
+}
+#builderApp .preview-toolbar, #builderApp .preview-caption, #builderApp .preview-shell { flex-shrink:0; }
+#builderApp .preview-shell { align-items:flex-start; }
+#builderApp .preview-shell.phone .wedding-preview-host,
+#builderApp .preview-shell.desktop .wedding-preview-host {
+  height:auto; min-height:660px; overflow:visible; overscroll-behavior:auto;
+}
+#builderApp .preview-scroll-controls {
+  flex:0 0 40px; position:sticky; align-self:flex-start; top:10px;
+  height:min(660px,calc(100dvh - 170px));
+  max-height:calc(100dvh - 170px);
+}
+/* Larger hero content should scroll in the right column, not inside the phone frame. */
+#builderApp .wedding-preview-host { scrollbar-width:none; }
+#builderApp .editor-scroll-pane { scrollbar-width:none; }
+@media(max-width:850px) {
+  #builderApp .site-header { flex-basis:82px; }
+  #builderApp .app-layout {
+    flex:1 1 auto; display:flex; flex-direction:column; overflow-y:auto;
+    overscroll-behavior-y:contain;
+  }
+  #builderApp .workspace, #builderApp .preview-column {
+    flex:0 0 70dvh; height:70dvh; min-height:360px; overflow-y:auto;
+  }
+  #builderApp .workspace { padding:15px 10px 25px 24px; }
+  #builderApp .editor-scroll-pane { padding:15px 6px 12px 0; }
+  #builderApp .preview-column { padding:18px 14px 40px; }
+  #builderApp .editor-scroll-controls, #builderApp .preview-scroll-controls {
+    height:calc(70dvh - 28px); max-height:none; top:9px;
+  }
+}
+@media(max-width:520px) {
+  #builderApp .site-header { flex-basis:66px; }
+  #builderApp .app-footer { flex:0 0 auto; }
+  #builderApp .workspace, #builderApp .preview-column { flex-basis:70dvh; height:70dvh; }
+  #builderApp .workspace { padding:10px 8px 24px 14px; }
+  #builderApp .editor-scroll-controls, #builderApp .preview-scroll-controls { flex-basis:35px; }
+  #builderApp .editor-scroll-pane { padding:13px 3px 9px 0; }
+}

@@ -22,9 +22,9 @@
       <button id="headerPreview" class="header-preview" type="button">Preview invitation <span aria-hidden="true">↗</span></button>
     </header>
     <main class="app-layout">
-      <section class="workspace" aria-label="Wedding website builder">
+      <section class="workspace" tabindex="0" aria-label="Scrollable wedding website editor panel">
         <div class="editor-pane-layout">
-          <div id="editorScrollPane" class="editor-scroll-pane" tabindex="0" aria-label="Scrollable wedding website editor">
+          <div id="editorScrollPane" class="editor-scroll-pane">
         <div class="eyebrow"><span class="eyebrow-rule"></span> YOUR WEDDING, YOUR WAY</div>
         <h1>Every love story<br />deserves a <em>beautiful</em> beginning.</h1>
         <p class="lead">Choose a look you love, add your celebrations, and create an invitation that's entirely yours.</p>
@@ -51,10 +51,10 @@
           </div>
         </div>
       </section>
-      <aside class="preview-column" aria-label="Live invitation preview">
+      <aside class="preview-column" tabindex="0" aria-label="Scrollable live invitation preview panel">
         <div class="preview-toolbar"><div><span class="live-dot"></span> LIVE PREVIEW <small>Changes appear instantly</small></div><div class="preview-toggle"><button type="button" data-size="phone" class="selected" aria-label="Phone preview" aria-pressed="true">▯</button><button type="button" data-size="desktop" aria-label="Desktop preview" aria-pressed="false">▭</button></div></div>
         <div id="previewShell" class="preview-shell phone">
-          <div id="previewStage" class="wedding-preview-host" tabindex="0" aria-label="Scrollable wedding website preview"></div>
+          <div id="previewStage" class="wedding-preview-host" aria-label="Wedding website preview"></div>
           <div class="preview-scroll-controls" aria-label="Preview vertical scroll controls">
             <button id="previewScrollUp" class="preview-scroll-arrow" type="button" aria-label="Scroll preview up" title="Scroll preview up">↑</button>
             <input id="previewVerticalSlider" type="range" min="0" max="1000" step="1" value="0" aria-label="Preview scroll position" aria-orientation="vertical" />
