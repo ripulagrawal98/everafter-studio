@@ -24,3 +24,10 @@ test('hashes private edit keys', async () => {
   assert.equal(hash.length,64);
   assert.notEqual(hash,'secret');
 });
+test('persists independent wedding page sections', () => {
+ const d=validate({...valid,story:'Our beautiful beginning',travelNote:'Join us',sections:{story:true,gallery:false,venue:true},photos:['https://example.org/photo.jpg']});
+ assert.equal(d.story,'Our beautiful beginning');
+ assert.equal(d.sections.gallery,false);
+ assert.deepEqual(d.photos,['https://example.org/photo.jpg']);
+ assert.throws(()=>validate({...valid,photos:['http://example.org/insecure.jpg']}),/HTTPS/);
+});

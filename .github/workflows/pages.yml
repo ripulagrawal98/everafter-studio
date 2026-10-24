@@ -29,7 +29,7 @@ jobs:
           mkdir -p pages-dist
           cp -R public/. pages-dist/
           # The hosted site is in a project subpath rather than the domain root.
-          sed -i 's|href="/styles.css"|href="./styles.css"|; s|src="/app.js"|src="./app.js"|' pages-dist/index.html
+          sed -i 's|href="/|href="./|g; s|src="/|src="./|g' pages-dist/index.html
           touch pages-dist/.nojekyll
 
       - name: Configure GitHub Pages
