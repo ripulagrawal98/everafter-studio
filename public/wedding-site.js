@@ -15,6 +15,16 @@
     return Object.entries(COLOR_VARIABLES).map(([key,variable]) => variable + ':' + colors[key].toUpperCase()).join(';');
   }
 
+  function backgroundStyle(bg) {
+    if (!bg || typeof bg !== 'object' || typeof bg.image !== 'string') return '';
+    const safeImage = /^data:image\/webp;base64,[A-Za-z0-9+/=]{100,900000}$/.test(bg.image) ||
+      /^\/media\/backgrounds\/[a-f0-9-]{36}\.webp$/.test(bg.image);
+    if (!safeImage) return '';
+    const position = ['center','top','bottom'].includes(bg.position) ? bg.position : 'center';
+    const overlay = Number.isInteger(bg.overlay) ? Math.max(0,Math.min(85,bg.overlay)) : 45;
+    return '--ws-uploaded-background:url(' + bg.image + ');--ws-uploaded-position:' + position +
+      ';--ws-uploaded-overlay:' + overlay + '%;';
+  }
   const LAYOUT_OPTIONS = {
     hero:['centered','split','framed'],
     story:['classic','editorial','letter'],
@@ -47,6 +57,7 @@
     const theme = themes.has(d.theme) ? d.theme : 'blossom';
     const designClass = (section) => ' ws-layout-' + layoutFor(d, section);
     const customColorStyle = colorStyle(d.colors);
+    const uploadedStyle = backgroundStyle(d.background);
     const partner1 = String(d.partner1 || 'Partner one').trim();
     const partner2 = String(d.partner2 || 'Partner two').trim();
     const events = (Array.isArray(d.events) ? d.events : []).slice(0,12);
@@ -85,7 +96,7 @@
     ).join('');
     const placeholder = '<div class="ws-gallery-placeholder" aria-label="Photo gallery preview"><span>♡</span><p>Add photo links in the editor to fill this space with your favourite moments.</p></div>';
 
-    return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + '"' + (customColorStyle ? ' style="' + esc(customColorStyle) + '"' : '') + '>' +
+    return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + (uploadedStyle ? ' ws-uploaded-background' : '') + '"' + (customColorStyle || uploadedStyle ? ' style="' + esc(customColorStyle + uploadedStyle) + '"' : '') + '>' +
       '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav></header>' +
       '<main>' +
         '<section class="ws-section ws-hero' + designClass('hero') + '" id="welcome">' +
