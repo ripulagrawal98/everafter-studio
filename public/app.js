@@ -87,6 +87,7 @@
       key, options.some(([id])=>id===input?.[key]) ? input[key] : DEFAULT_SECTION_LAYOUTS[key]
     ]));
   }
+  let localAudioPreview=null;
   const EXAMPLE = {
     theme: 'blossom', background:null, colors: null, sectionDesigns:{hero:'centered',story:'classic',events:'cards',gallery:'grid',venue:'cards',closing:'classic'}, partner1: 'Anaya', partner2: 'Kabir',
     tagline: 'A little destiny, a lifetime of love.',
@@ -94,6 +95,7 @@
     story: 'Our paths crossed, our families brought us together, and a beautiful journey began. From that first conversation to the memories we are yet to make, we are so grateful to share this chapter with you.',
     travelNote: 'We would be delighted to celebrate with you.',
     sections: {story:true,gallery:true,venue:true},
+    music:{enabled:false,source:'preset',track:'rose-piano',url:''},
     photos: [],
     events: [
       { id: 'e1', name: 'Haldi', date: '2026-12-10', time: '11:00', venue: 'The Garden Courtyard, Jaipur' },
@@ -122,6 +124,12 @@
     travelNote: String(v?.travelNote ?? '').slice(0, 240),
     sections: {story:v?.sections?.story !== false,gallery:v?.sections?.gallery !== false,venue:v?.sections?.venue !== false},
     photos: safeArray(v?.photos).filter(p => typeof p === 'string').slice(0, 6).map(p => p.slice(0, 2048)),
+    music:{
+      enabled:v?.music?.enabled === true,
+      source:v?.music?.source === 'upload'?'upload':'preset',
+      track:['rose-piano','royal-waltz','morning-bells'].includes(v?.music?.track)?v.music.track:'rose-piano',
+      url:typeof v?.music?.url === 'string' && /^\/api\/music\/[a-z0-9-]+\/[a-f0-9-]{36}\.(mp3|m4a|ogg|wav)$/.test(v.music.url)?v.music.url:''
+    },
     events: safeArray(v?.events).slice(0, 12).map((e, i) => ({
       id: String(e.id || `e${i}`), name: String(e.name ?? '').slice(0, 60),
       date: String(e.date ?? '').slice(0, 10), time: String(e.time ?? '').slice(0, 5),
@@ -182,7 +190,10 @@
     const stage = $('#previewStage'), column = $('.preview-column');
     if (!stage || !column) return;
     const keep = column.scrollTop;
-    stage.innerHTML = window.EverafterSite.render(draft, {preview:true});
+    window.EverafterMusic?.stop();
+    const rendering=localAudioPreview && draft.music.enabled && draft.music.source==='upload'
+      ? {...draft,music:{...draft.music,url:localAudioPreview}} : draft;
+    stage.innerHTML = window.EverafterSite.render(rendering,{preview:true});
     column.scrollTop = keep;
     requestAnimationFrame(syncPreviewScroll);
   }
@@ -375,6 +386,7 @@
       }).join('') + `</div>` +
       `<div class="field" style="margin-top:20px"><label for="storyField">Your story</label><textarea id="storyField" rows="5" data-field="story" maxlength="1200" placeholder="How it all began...">${escapeHtml(draft.story)}</textarea></div>` +
       `<div class="field"><label for="travelField">A note for your guests</label><textarea id="travelField" rows="3" data-field="travelNote" maxlength="240" placeholder="Travel notes, if any...">${escapeHtml(draft.travelNote)}</textarea></div>` +
+      musicEditor() +
       `<div class="ws-photo-edit"><h3>Gallery photographs (up to six)</h3><p class="ws-editor-note">Paste public HTTPS image links. Image uploads will be added in the next phase.</p>` +
       draft.photos.map((photo,i) => `<div class="ws-photo-field"><input type="url" aria-label="Photo link ${i+1}" data-photo-index="${i}" value="${attribute(photo)}" placeholder="https://example.com/photo.jpg" /><button type="button" aria-label="Remove photo ${i+1}" data-remove-photo="${i}">×</button></div>`).join('') +
       `<button type="button" class="add-event" data-add-photo ${draft.photos.length >= 6 ? 'disabled' : ''}>+ Add photo link</button></div>`;
@@ -641,6 +653,10 @@
     });
     $('#editor').addEventListener('change', (evt) => {
       const el = evt.target;
+      if(el.id==='music-enabled'){draft.music.enabled=el.checked;refresh();setStep(3);return;}
+      if(el.name==='music-source'){draft.music.source=el.value==='upload'?'upload':'preset';refresh();setStep(3);return;}
+      if(el.id==='music-track'){draft.music.track=el.value;refresh();setStep(3);return;}
+      if(el.id==='music-file'){uploadMusic(el.files?.[0]);return;}
       if (el.id==='background-upload-input') {setBackgroundFile(el.files?.[0]);return;}
       if (el.dataset.backgroundPosition && draft.background) { draft.background.position=el.value;saveDraft();preview();return; }
       if (el.dataset.backgroundScope && draft.background) { draft.background.scope=el.value==='all'?'all':'hero';saveDraft();preview();return; }
