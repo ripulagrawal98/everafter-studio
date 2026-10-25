@@ -403,3 +403,22 @@ html { scroll-behavior:smooth }
 .background-preview-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;font-size:11px}
 .background-preview-row button{border:0;background:transparent;color:#a16a75;text-decoration:underline}
 .background-upload-panel .background-upload-note{margin:15px 0 0;font-size:10px}
+
+/* Image uploads: on the hero or across all customer-facing sections. */
+.wedding-site.ws-uploaded-background.ws-uploaded-all .ws-section {
+  background-image:linear-gradient(to bottom,
+    color-mix(in srgb,var(--ws-paper) var(--ws-uploaded-overlay),transparent),
+    color-mix(in srgb,var(--ws-bg) var(--ws-uploaded-overlay),transparent)),
+    var(--ws-uploaded-background) !important;
+  background-position:center,var(--ws-uploaded-position) !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
+}
+.background-upload-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.background-remove{border:0;background:transparent;color:#8c5c6d;text-decoration:underline;font-size:11px;cursor:pointer}
+.background-thumbnail{margin:15px 0;position:relative;border:1px solid #e4d6ce;border-radius:9px;overflow:hidden;min-height:150px;background:#f5ede9}
+.background-thumbnail img{display:block;max-height:220px;width:100%;object-fit:cover}
+.background-thumbnail span{position:absolute;bottom:10px;left:10px;color:#4c343d;background:#fffdf3ec;border-radius:20px;font-size:11px;padding:6px 10px}
+.background-setting{margin:14px 0 0}
+.background-setting label{display:block;font-weight:700;font-size:11px;margin-bottom:7px}
+.background-setting select{width:100%}
