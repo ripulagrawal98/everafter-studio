@@ -66,3 +66,6 @@
 .published-actions .publication-toggle:hover{background:#fdf0f2}
 .published-links.is-unpublished .publication-toggle{color:#375e49;border-color:#bed6c3}
 .published-links.is-unpublished .publication-toggle:hover{background:#edf5ee}
+
+/* Manual publication request */
+.admin-contact-form{background:#fffdfb;border:1px solid #e5d8d3;border-radius:12px;padding:20px;margin:20px 0}.admin-contact-form h3{font:500 25px 'Cormorant Garamond',serif;margin:0 0 14px}.admin-contact-form .field{margin-bottom:14px}
