@@ -448,6 +448,21 @@
     setStep(4);
     notice('Payment verified! Your wedding website is now live. Share its link with your guests.');
   }
+  async function recoverPaidOrder(pending) {
+    const response=await fetch('/api/checkout/status?orderId='+encodeURIComponent(pending.orderId),{
+      headers:{Authorization:'Bearer '+pending.editToken}
+    });
+    const info=await response.json().catch(()=>null);
+    if(!response.ok) throw Error(info?.error||'Could not recover payment status.');
+    if(!info.paid)return false;
+    storeSite(info.slug,pending.editToken);
+    clearPendingOrder();
+    published={slug:info.slug,url:new URL(info.url,location.origin).href,isLive:true};
+    history.replaceState(null,'','/?edit='+encodeURIComponent(info.slug));
+    setStep(4);
+    notice('Payment confirmed. Your website is live and ready to share!');
+    return true;
+  }
   async function launchPayment(pending) {
     await checkoutScript();
     return new Promise((resolve,reject)=>{
@@ -458,8 +473,12 @@
           order_id:pending.orderId,
           theme:{color:'#a77484'},
           handler:async(result)=>{
-            try {await verifyPayment(result,pending);resolve();}
-            catch(err){reject(err);}
+            try {
+              pending.paymentResult=result;
+              savePendingOrder(pending);
+              await verifyPayment(result,pending);
+              resolve();
+            } catch(err){reject(err);}
           },
           modal:{ondismiss:()=>resolve()}
         });
@@ -489,6 +508,11 @@
         setStep(4);notice('Website changes saved.');return;
       }
       let pending=pendingOrder();
+      if(pending?.orderId && pending?.editToken && await recoverPaidOrder(pending)) return;
+      if(pending?.paymentResult?.razorpay_payment_id) {
+        await verifyPayment(pending.paymentResult,pending);
+        return;
+      }
       if(!pending || !pending.orderId || !pending.editToken){
         const response=await fetch('/api/checkout/create',{
           method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)
