@@ -18,7 +18,7 @@ An independent Cloudflare Pages application for creating customizable wedding we
 
 Customers design and preview their site at no cost. Step 5 now offers **Contact admin to publish** rather than an unfinished payment page.
 
-Set up the separate Cloudflare Pages application and D1 binding `DB`, then apply **all migrations in order**, including `migrations/0003_publication_requests.sql`. Set Cloudflare secret `ADMIN_API_TOKEN` to a random value of at least 32 characters.
+Set up the separate Cloudflare Pages application and D1 binding `DB`, then apply **all migrations in order**, including `migrations/0003_publication_requests.sql`. No `ADMIN_API_TOKEN` is needed to **collect requests**. Just bind D1 as `DB` and apply migration `0003_publication_requests.sql`. The optional `ADMIN_API_TOKEN` is only for the admin approval API, not reading records directly in Cloudflare D1.
 
 `POST /api/publication-requests` saves the wedding draft privately, plus customer contact details. `GET /api/publication-requests/:id` lets that customer check status using their browser-local private key; the URL is returned only after approval.
 
@@ -33,7 +33,7 @@ curl -H "Authorization: Bearer $ADMIN_API_TOKEN" https://YOUR-PAGES-DOMAIN/api/a
 curl -X POST -H "Authorization: Bearer $ADMIN_API_TOKEN" https://YOUR-PAGES-DOMAIN/api/admin/requests/REQUEST_ID/approve
 ```
 
-No admin dashboard or automated email notifications yet: review the pending requests through the protected API, and send the approved URL to the customer using their submitted email or phone. GitHub Pages has no backend; request submission works only after Cloudflare D1 setup. Rate limits, abuse protection, retention/privacy policy and auth should be added before broad public access.
+No admin dashboard or automated email notifications yet. For now, inspect the `publication_requests` table directly under Cloudflare D1 → Console. For example: `SELECT * FROM publication_requests ORDER BY created_at DESC;`. The protected admin API is optional for reviewing or approving, and is not necessary for request collection. GitHub Pages has no backend; request submission works only after Cloudflare D1 setup. Rate limits, abuse protection, retention/privacy policy and auth should be added before broad public access.
 
 ### Payment integration (paused)
 
