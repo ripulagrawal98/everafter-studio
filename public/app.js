@@ -385,7 +385,7 @@
         '<div class="field"><label for="music-file">Song file (MP3, M4A, OGG or WAV)</label><input id="music-file" type="file" accept=".mp3,.m4a,.ogg,.wav,audio/mpeg,audio/mp4,audio/ogg,audio/wav"/>'+
         '<p class="ws-editor-note">'+(localAudioPreview?'Ready for preview on this device. ':m.url?'Saved on your website. ':'')+'Maximum 8 MB. Use audio you own or are licensed to share.</p>'+
         '<p class="ws-editor-note">Before publication, uploaded audio is preview-only. Once approved, reopen the builder and upload it to Cloudflare R2 so guests can listen.</p></div>')+
-      '</div>':'')+'</section>';
+      '</div>':'')+(published?.slug?'<button type="button" class="btn btn-dark" id="saveMusicSettings" style="margin-top:12px">Save music settings to website</button>':'')+'</section>';
   }
   async function uploadMusic(file){
     if(!file)return;
@@ -413,6 +413,21 @@
         refresh();setStep(3);notice('Your song is saved on the wedding website.');
       }catch(e){setStep(3);notice(e.message||'Song is available for local preview only.');}
     }else{setStep(3);notice('Song ready for preview. After approval, reopen the builder and upload it again to make it available to guests.');}
+  }
+  async function saveMusicSettings(){
+    if(!published?.slug)return notice('Publish your website before saving its music online.');
+    const token=savedSites()[published.slug];
+    if(!token)return notice('Your private edit key is missing.');
+    if(draft.music.enabled && draft.music.source==='upload' && !draft.music.url)
+      return notice('Upload the selected audio file to cloud storage before saving.');
+    try{
+      const response=await fetch('/api/sites/'+encodeURIComponent(published.slug),{
+        method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(draft)
+      });
+      const result=await response.json().catch(()=>null);
+      if(!response.ok)throw Error(result?.error||'Could not save your changes.');
+      notice('Music settings saved to your live wedding website.');
+    }catch(e){notice(e.message||'Unable to save music settings.');}
   }
   function sectionsEditor() {
     const switches = [
@@ -561,7 +576,7 @@
         storeSite(result.slug,pending.editToken);
         published={slug:result.slug,url:result.url,isLive:true};
         localStorage.removeItem('everafter:manual-request');
-        history.replaceState(null,'','/?edit='+encodeURIComponent(result.slug));
+        history.replaceState(null,'','/builder/?edit='+encodeURIComponent(result.slug));
         setStep(4);notice('Approved! Your website is now live.');
       } else notice('Your request is still awaiting admin review.');
     } catch(e){notice(e.message);}
@@ -625,6 +640,7 @@
       }).catch(() => notice('The published site could not be loaded. Your local draft is still available.'));
     }
     $('#editor').addEventListener('click', (evt) => {
+      if(evt.target.closest('#saveMusicSettings')){saveMusicSettings();return;}
       if (evt.target.closest('[data-remove-background]')) {draft.background=null;refresh();setStep(0);syncColorControls();return;}
       const layout = evt.target.closest('[data-layout-section][data-layout-id]');
       if (layout) {
