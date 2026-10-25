@@ -132,6 +132,7 @@
   let step = 0;
   let published = null;
   let publishBusy = false;
+  function publishActionText() { return published ? (published.isLive ? 'Update website ↗' : 'Save changes ↗') : 'Publish website ↗'; }
   function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
   function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); } catch {} }
   function savedSites() { return readJSON(EDIT_KEYS, {}); }
@@ -260,8 +261,32 @@
       `<button type="button" class="add-event" data-add-photo ${draft.photos.length >= 6 ? 'disabled' : ''}>+ Add photo link</button></div>`;
   }
   function publishEditor() {
-    const link = published ? `<div class="published-links"><h3>✓ Your website is published</h3><div class="share-url">${escapeHtml(published.url)}</div><div class="published-actions"><button type="button" id="copyShare">Copy link</button><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open website ↗</a></div></div>` : '';
-    return `<div class="section-kicker">Step 05 · Almost forever</div><h2 class="editor-title">Ready to share the joy?</h2><p class="editor-hint">One more look before your wedding website goes live.</p><div class="publish-summary"><div class="summary-line"><span>Invitation for</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div><div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(t => t.id === draft.theme)?.name || 'Blossom')}</strong></div><div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div><div class="summary-line"><span>Suggested link</span><strong>/s/${escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div></div><p class="publish-help">Publishing creates a public, shareable invitation. Anyone with the link can view event details. Your private edit key stays in this browser; keep a copy before clearing browser data.</p>${link}`;
+    const live = published?.isLive !== false;
+    const actions = published
+      ? `<div class="published-actions">
+          ${live ? `<button type="button" id="copyShare">Copy link</button><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open website ↗</a>` : ''}
+          <button type="button" id="togglePublication" class="publication-toggle">${live ? 'Unpublish website' : 'Republish website'}</button>
+        </div>`
+      : '';
+    const link = published
+      ? `<div class="published-links ${live ? '' : 'is-unpublished'}">
+          <h3>${live ? '✓ Your website is published' : 'Your website is unpublished'}</h3>
+          <div class="share-url">${escapeHtml(published.url)}</div>
+          ${live ? '' : '<p class="published-status-copy">Guests cannot view this invitation. Your details and website address are saved, ready to republish.</p>'}
+          ${actions}
+        </div>`
+      : '';
+    return `<div class="section-kicker">Step 05 · Almost forever</div>
+      <h2 class="editor-title">Ready to share the joy?</h2>
+      <p class="editor-hint">One more look before your wedding website goes live.</p>
+      <div class="publish-summary">
+        <div class="summary-line"><span>Invitation for</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div>
+        <div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(t => t.id === draft.theme)?.name || 'Blossom')}</strong></div>
+        <div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div>
+        <div class="summary-line"><span>Suggested link</span><strong>${published ? escapeHtml('/s/' + published.slug) : '/s/' + escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div>
+      </div>
+      <p class="publish-help">Publishing creates a public, shareable invitation. Anyone with the link can view event details. Your private edit key stays in this browser; keep a copy before clearing browser data.</p>
+      ${link}`;
   }
   function validatePage(specificStep = step) {
     if (specificStep >= 1 && (!draft.partner1.trim() || !draft.partner2.trim())) return 'Please enter both names before continuing.';
@@ -283,7 +308,7 @@
     $('#editor').innerHTML = [themeEditor, coupleEditor, eventsEditor, sectionsEditor, publishEditor][step]();
     $$('.step').forEach(b => { const selected = +b.dataset.step === step; b.classList.toggle('active', selected); b.setAttribute('aria-current', selected ? 'step' : 'false'); });
     const back = $('#backButton'); back.style.visibility = step === 0 ? 'hidden' : 'visible';
-    const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? published ? 'Update website ↗' : 'Publish website ↗' : 'Continue →';
+    const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? publishActionText() : 'Continue →';
     nextButton.disabled = publishBusy;
     notice('');
     if (oldStep !== step && $('.workspace')) $('.workspace').scrollTop = 0;
@@ -307,18 +332,47 @@
       if (!response.ok) throw new Error(result?.error || `Publishing failed (${response.status}).`);
       if (!result?.slug || !result?.url) throw new Error('The server returned an unexpected response.');
       if (result.editToken) storeSite(result.slug, result.editToken);
-      published = { slug: result.slug, url: new URL(result.url, location.origin).href };
+      published = { slug: result.slug, url: new URL(result.url, location.origin).href, isLive: result.published !== false };
+      history.replaceState(null, '', `/?edit=${encodeURIComponent(result.slug)}`);
       notice('');
       setStep(4);
     } catch (err) {
       notice(err instanceof TypeError || /Publishing failed \(40[45]|501\)/.test(err.message) ? 'Publishing is not available in static preview mode. Deploy to Cloudflare Pages and bind a D1 database to enable it.' : err.message);
-    } finally { publishBusy = false; $('#nextButton').disabled = false; $('#nextButton').textContent = published ? 'Update website ↗' : 'Publish website ↗'; }
+    } finally { publishBusy = false; $('#nextButton').disabled = false; $('#nextButton').textContent = publishActionText(); }
+  }
+  async function togglePublication() {
+    if (!published || publishBusy) return;
+    const shouldPublish = !published.isLive;
+    const token = savedSites()[published.slug];
+    if (!token) return notice('Your private edit key is missing. Open this site in the browser where you published it.');
+    if (!shouldPublish && !window.confirm('Unpublish this website? Guests will no longer be able to open its link. Your content and the URL will be kept.')) return;
+    publishBusy = true;
+    $('#nextButton').disabled = true;
+    const toggle = $('#togglePublication');
+    if (toggle) { toggle.disabled = true; toggle.textContent = shouldPublish ? 'Republishing…' : 'Unpublishing…'; }
+    try {
+      const response = await fetch(`/api/sites/${encodeURIComponent(published.slug)}`, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body: JSON.stringify({published:shouldPublish})
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || 'Unable to change publishing status.');
+      published.isLive = result.published;
+      setStep(4);
+      notice(published.isLive ? 'Website republished! The same invitation link is live again.' : 'Website unpublished. Your details and link have been saved.');
+    } catch (err) {
+      notice(err.message || 'Unable to change publishing status.');
+    } finally {
+      publishBusy = false;
+      setStep(4);
+    }
   }
   function setupBuilder() {
     const editSlug = new URLSearchParams(location.search).get('edit');
     if (editSlug && /^[a-z0-9-]{1,80}$/.test(editSlug) && savedSites()[editSlug]) {
-      fetch(`/api/sites/${editSlug}`).then(r => { if (!r.ok) throw Error('Unable to load your wedding.'); return r.json(); }).then(site => {
-        draft = normalize(site); published = {slug: editSlug, url: `${location.origin}/s/${editSlug}`}; saveDraft(); preview(); setStep(1);
+      fetch(`/api/sites/${editSlug}`, {headers:{Authorization:`Bearer ${savedSites()[editSlug]}`}}).then(r => { if (!r.ok) throw Error('Unable to load your wedding.'); return r.json(); }).then(site => {
+        draft = normalize(site); published = {slug: editSlug, url: `${location.origin}/s/${editSlug}`, isLive:site.published !== false}; saveDraft(); preview(); setStep(1);
       }).catch(() => notice('The published site could not be loaded. Your local draft is still available.'));
     }
     $('#editor').addEventListener('click', (evt) => {
@@ -356,7 +410,8 @@
       if (evt.target.closest('[data-add-photo]')) { if (draft.photos.length < 6) { draft.photos.push(''); refresh(); setStep(3); } return; }
       const photoRemove = evt.target.closest('[data-remove-photo]');
       if (photoRemove) { draft.photos.splice(+photoRemove.dataset.removePhoto,1); refresh(); setStep(3); return; }
-      if (evt.target.closest('#copyShare') && published) {
+      if (evt.target.closest('#togglePublication') && published) { togglePublication(); return; }
+      if (evt.target.closest('#copyShare') && published && published.isLive) {
         navigator.clipboard?.writeText(published.url).then(() => notice('Website link copied.')).catch(() => notice('Copy the link shown above.'));
       }
     });
