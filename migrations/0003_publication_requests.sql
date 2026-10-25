@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS publication_requests (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, contact_name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, message TEXT, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, reviewed_at TEXT); CREATE INDEX IF NOT EXISTS idx_publication_requests_status ON publication_requests(status,created_at);
