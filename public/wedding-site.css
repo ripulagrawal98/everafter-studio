@@ -380,3 +380,26 @@ html { scroll-behavior:smooth }
   #builderApp .editor-scroll-controls, #builderApp .preview-scroll-controls { flex-basis:35px; }
   #builderApp .editor-scroll-pane { padding:13px 3px 9px 0; }
 }
+
+/* Customer-uploaded wallpaper overlays the theme hero gradient. */
+.wedding-site.ws-uploaded-background .ws-hero {
+  background-image:
+    linear-gradient(to bottom,
+      color-mix(in srgb,var(--ws-paper) var(--ws-uploaded-overlay),transparent),
+      color-mix(in srgb,var(--ws-bg) var(--ws-uploaded-overlay),transparent)),
+    var(--ws-uploaded-background) !important;
+  background-position:center,var(--ws-uploaded-position) !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
+}
+.background-upload-panel{margin-top:21px;border:1px solid #e4d6ce;background:#fffdfb;border-radius:12px;padding:20px}
+.background-upload-panel h3{font:500 25px 'Cormorant Garamond',serif;margin:0 0 8px}
+.background-upload-panel p{font:12px/1.6 'DM Sans',sans-serif;color:#85716d}
+.background-upload-button{display:inline-flex;border:1px solid #b88b95;border-radius:8px;background:#fcf2f0;padding:11px 16px;color:#805565;font-size:12px;font-weight:700;cursor:pointer}
+#background-upload-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.background-upload-panel label:not(.background-upload-button){display:block;font-size:11px;font-weight:700;color:#6e5961;margin:13px 0 7px}
+.background-upload-panel input[type=range]{width:100%;accent-color:#ad7e88}
+.background-upload-panel select{padding:10px;border:1px solid #e4d6ce;border-radius:7px;width:100%;background:#fff}
+.background-preview-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;font-size:11px}
+.background-preview-row button{border:0;background:transparent;color:#a16a75;text-decoration:underline}
+.background-upload-panel .background-upload-note{margin:15px 0 0;font-size:10px}
