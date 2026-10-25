@@ -362,10 +362,12 @@
       setStep(4);
       notice(published.isLive ? 'Website republished! The same invitation link is live again.' : 'Website unpublished. Your details and link have been saved.');
     } catch (err) {
+      setStep(4);
       notice(err.message || 'Unable to change publishing status.');
     } finally {
       publishBusy = false;
-      setStep(4);
+      $('#nextButton').disabled = false;
+      $('#nextButton').textContent = publishActionText();
     }
   }
   function setupBuilder() {
