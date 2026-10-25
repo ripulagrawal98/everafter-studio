@@ -140,6 +140,11 @@
   let step = 0;
   let published = null;
   let publishBusy = false;
+  // Keep contact details in memory while editing. Do not redraw the form on keypress.
+  const contactFieldMap = Object.freeze({
+    requestName:'name', requestEmail:'email', requestPhone:'phone', requestMessage:'message'
+  });
+  const contactDraft = {name:'',email:'',phone:'',message:''};
   let priceDisplay = 'Price shown at checkout';
   const pendingKey = 'everafter:pending-payment:v1';
   function pendingOrder() {return readJSON(pendingKey,null);}
@@ -388,10 +393,10 @@
       ${approved ? `<div class="published-links"><h3>Your wedding website is live!</h3><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open your website ↗</a><div class="published-actions"><button id="copyShare" type="button">Copy link</button><button id="togglePublication" type="button">Unpublish website</button></div></div>`
        : requested ? `<div class="published-links"><h3>Request submitted</h3><p>Our team will review your request. Your website is not public yet.</p><button type="button" class="btn btn-ghost" id="checkRequestStatus">Check request status</button><p class="publish-help">Request reference: ${escapeHtml(requested.id)}</p></div>`
        : `<div class="admin-contact-form"><h3>Contact admin to publish</h3>
-          <div class="field"><label for="requestName">Your name</label><input id="requestName" maxlength="90" placeholder="Your name" required /></div>
-          <div class="field"><label for="requestEmail">Email address</label><input id="requestEmail" type="email" maxlength="180" placeholder="you@example.com" required /></div>
-          <div class="field"><label for="requestPhone">Phone / WhatsApp (optional)</label><input id="requestPhone" type="tel" maxlength="32" placeholder="+91 ..." /></div>
-          <div class="field"><label for="requestMessage">Anything we should know? (optional)</label><textarea id="requestMessage" maxlength="650" placeholder="A note for our team"></textarea></div>
+          <div class="field"><label for="requestName">Your name</label><input id="requestName" maxlength="90" placeholder="Your name" value="${attribute(contactDraft.name)}" required /></div>
+          <div class="field"><label for="requestEmail">Email address</label><input id="requestEmail" type="email" maxlength="180" placeholder="you@example.com" value="${attribute(contactDraft.email)}" required /></div>
+          <div class="field"><label for="requestPhone">Phone / WhatsApp (optional)</label><input id="requestPhone" type="tel" maxlength="32" placeholder="+91 ..." value="${attribute(contactDraft.phone)}" /></div>
+          <div class="field"><label for="requestMessage">Anything we should know? (optional)</label><textarea id="requestMessage" maxlength="650" placeholder="A note for our team">${escapeHtml(contactDraft.message)}</textarea></div>
           <p class="publish-help">After submitting, the admin will contact you and activate your final website manually. No payment is collected here.</p></div>`}`;
   }
   function validatePage(specificStep = step) {
@@ -507,8 +512,8 @@
     const validation=validatePage(4);if(validation)return notice(validation);
     if(published?.slug)return notice('Your website is already available.');
     if(readJSON('everafter:manual-request',null))return checkRequestStatus();
-    const name=$('#requestName')?.value.trim(),email=$('#requestEmail')?.value.trim();
-    const phone=$('#requestPhone')?.value.trim(),message=$('#requestMessage')?.value.trim();
+    const name=contactDraft.name.trim(),email=contactDraft.email.trim();
+    const phone=contactDraft.phone.trim(),message=contactDraft.message.trim();
     if(!name||!email)return notice('Please enter your name and email to contact the admin.');
     if(draft.background?.image?.startsWith('data:'))
       return notice('Uploaded backgrounds are preview-only. Remove the uploaded background before requesting your website.');
@@ -604,6 +609,12 @@
     });
     $('#editor').addEventListener('input', (evt) => {
       const el = evt.target;
+      // Contact request inputs are not part of the wedding preview. The generic
+      // refresh below would replace these DOM nodes after every typed character.
+      if (Object.hasOwn(contactFieldMap, el.id)) {
+        contactDraft[contactFieldMap[el.id]] = el.value;
+        return;
+      }
       if (el.dataset.backgroundOverlay!==undefined && draft.background) {
         draft.background.overlay=Number(el.value);saveDraft();preview();
         const label=el.previousElementSibling;if(label)label.textContent='Color overlay: '+el.value+'%';
@@ -618,9 +629,14 @@
         }
         return;
       }
-      if (el.dataset.field) draft[el.dataset.field] = el.value;
-      if (el.dataset.photoIndex !== undefined) draft.photos[+el.dataset.photoIndex] = el.value;
-      if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; }
+      let changed = false;
+      if (el.dataset.field) { draft[el.dataset.field] = el.value; changed = true; }
+      if (el.dataset.photoIndex !== undefined) { draft.photos[+el.dataset.photoIndex] = el.value; changed = true; }
+      if (el.dataset.eventField) {
+        const e = draft.events.find(v => v.id === el.dataset.eventId);
+        if (e) { e[el.dataset.eventField] = el.value; changed = true; }
+      }
+      if (!changed) return;
       notice(''); refresh();
     });
     $('#editor').addEventListener('change', (evt) => {
@@ -641,10 +657,6 @@
       $('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });
       requestAnimationFrame(syncPreviewScroll);
     }));
-    fetch('/api/checkout/config').then(r=>r.json()).then(config=>{
-      priceDisplay=config.configured&&config.amount?displayAmount(config.amount):'Checkout not yet configured';
-      if(step===4)setStep(4);
-    }).catch(()=>{priceDisplay='Checkout requires Cloudflare deployment';});
     setupPreviewScroll();
     setupEditorScroll();
     preview(); setStep(0); syncColorControls();
