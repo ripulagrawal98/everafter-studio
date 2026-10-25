@@ -69,3 +69,18 @@
 
 /* Manual publication request */
 .admin-contact-form{background:#fffdfb;border:1px solid #e5d8d3;border-radius:12px;padding:20px;margin:20px 0}.admin-contact-form h3{font:500 25px 'Cormorant Garamond',serif;margin:0 0 14px}.admin-contact-form .field{margin-bottom:14px}
+
+/* Cloud-saved drafts: unobtrusive verification and save state in the left editor. */
+.cloud-draft-bar{margin:16px 0 22px;padding:16px;border:1px solid #dcd0cf;background:#fffdfa;border-radius:12px}
+.cloud-bar-top{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.cloud-bar-top strong{display:block;font-size:12px}
+.cloud-bar-top p{margin:4px 0 0;font-size:10px;line-height:1.5;color:#887977}
+.cloud-bar-top button,.cloud-login button,.cloud-save-button{border:1px solid #9d7780;border-radius:7px;padding:9px 12px;background:#654652;color:#fff;font-size:11px;font-weight:700;white-space:nowrap}
+.cloud-login{display:grid;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #e9ded9}
+.cloud-login label{display:block;font-size:11px;font-weight:700}
+.cloud-login input{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #e5d8d2;border-radius:8px;background:white;font-size:13px}
+.cloud-login button{justify-self:start}
+#cloudStatus{font-size:10px;color:#50715b;margin:10px 0 0;line-height:1.5}
+#cloudStatus.error{color:#a34752}
+.cloud-save-button{background:transparent;color:#654652;margin-top:10px}
+@media(max-width:520px){.cloud-draft-bar{padding:12px}.cloud-bar-top{gap:9px}.cloud-bar-top button{padding:8px 9px}}
