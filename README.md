@@ -14,6 +14,27 @@ An independent Cloudflare Pages application for creating customizable wedding we
 - Public /s/<slug> invitation pages with Open Graph metadata
 - Private edit keys stored in the owner's browser
 
+## Private Admin Dashboard
+
+The admin dashboard is at `https://YOUR-CLOUDFLARE-DOMAIN/admin/`.
+It shows pending/approved requests, full wedding details and contact information,
+and provides **Approve & publish website** with the final shareable URL.
+It is separate from the public customer builder.
+
+Set the Cloudflare Pages secret `ADMIN_API_TOKEN` to a random value of at least
+32 characters (e.g. `openssl rand -hex 32`) under Settings → Variables and Secrets.
+Sign in by entering this token. The server checks the token and issues an
+8-hour **HttpOnly, Secure, SameSite=Strict** signed session cookie; the token is
+not stored in localStorage or in site source. Signing out clears the session.
+D1 must be bound as `DB`; apply database migrations 0001–0003.
+
+The /admin/ HTML and assets can be fetched publicly (they are only a sign-in
+screen); **customer data and all publishing actions are server-side protected**.
+GitHub Pages has no Cloudflare Functions/D1 and cannot provide a functioning
+dashboard. Use the Cloudflare-hosted URL, not the GitHub Pages mirror.
+A stronger production identity system (Cloudflare Access/SSO with MFA and rate
+limiting) is recommended before handling significant volumes of customer data.
+
 ## Manual publication requests (payments coming soon)
 
 Customers design and preview their site at no cost. Step 5 now offers **Contact admin to publish** rather than an unfinished payment page.
