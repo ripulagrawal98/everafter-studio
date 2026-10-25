@@ -88,7 +88,7 @@
     ]));
   }
   const EXAMPLE = {
-    theme: 'blossom', colors: null, sectionDesigns:{hero:'centered',story:'classic',events:'cards',gallery:'grid',venue:'cards',closing:'classic'}, partner1: 'Anaya', partner2: 'Kabir',
+    theme: 'blossom', background:null, colors: null, sectionDesigns:{hero:'centered',story:'classic',events:'cards',gallery:'grid',venue:'cards',closing:'classic'}, partner1: 'Anaya', partner2: 'Kabir',
     tagline: 'A little destiny, a lifetime of love.',
     message: 'Together with our families, we invite you to celebrate the beginning of our forever.',
     story: 'Our paths crossed, our families brought us together, and a beautiful journey began. From that first conversation to the memories we are yet to make, we are so grateful to share this chapter with you.',
@@ -112,6 +112,7 @@
   const normalize = (v) => ({
     theme: validTheme(v?.theme),
     colors: validColors(v?.colors),
+    background: v?.background && typeof v.background.image === 'string' ? {image:v.background.image,position:v.background.position||'center',overlay:Number.isInteger(v.background.overlay)?v.background.overlay:45} : null,
     sectionDesigns: cleanSectionLayouts(v?.sectionDesigns),
     partner1: String(v?.partner1 ?? '').slice(0, 70),
     partner2: String(v?.partner2 ?? '').slice(0, 70),
@@ -216,6 +217,35 @@
     setupColumnScroll($('.preview-column'), $('#previewVerticalSlider'), $('#previewScrollUp'),
       $('#previewScrollDown'), syncPreviewScroll, $('#previewStage'));
   }
+  async function setBackgroundFile(file) {
+    if (!file) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8*1024*1024)
+      return notice('Choose a JPG, PNG or WebP file smaller than 8 MB.');
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    try {
+      await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Invalid image'));image.src=url;});
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1,1440/image.naturalWidth,1440/image.naturalHeight);
+      canvas.width = Math.max(1,Math.round(image.naturalWidth*scale));
+      canvas.height = Math.max(1,Math.round(image.naturalHeight*scale));
+      canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+      let imageData=canvas.toDataURL('image/webp',0.65);
+      if (imageData.length > 900000) {
+        const factor=Math.sqrt(750000/imageData.length);
+        canvas.width=Math.max(1,Math.round(canvas.width*factor));
+        canvas.height=Math.max(1,Math.round(canvas.height*factor));
+        canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+        imageData=canvas.toDataURL('image/webp',0.55);
+      }
+      if (imageData.length>900000) return notice('Image is too large after compression. Try a smaller image.');
+      draft.background={image:imageData,position:'center',overlay:45};
+      refresh();setStep(0);syncColorControls();
+      notice('Background uploaded for preview. Permanent publishing of this image requires Cloudflare image storage.');
+    } catch {
+      notice('Could not read this image. Try another JPG, PNG or WebP.');
+    } finally {URL.revokeObjectURL(url);}
+  }
   function themeEditor() {
     const colors = activeColors();
     const palettes = PALETTES.map(p => {
@@ -225,8 +255,10 @@
     const controls = COLOR_FIELDS.map(([key,label]) =>
       `<div class="color-control"><label for="picker-${key}">${label}</label><div class="color-control-inputs"><input type="color" id="picker-${key}" data-color-picker="${key}" value="${colors[key]}" aria-label="Pick ${label.toLowerCase()}" /><input type="text" id="hex-${key}" data-color-hex="${key}" value="${colors[key]}" maxlength="7" spellcheck="false" aria-label="${label} hex code" pattern="#[0-9a-fA-F]{6}" /></div></div>`
     ).join('');
+    const bg = draft.background;
+    const backgroundPanel = `<section class="background-upload-panel"><h3>Upload your own background</h3><p>Bring your own floral artwork, texture or photograph. It updates the welcome section immediately.</p><label class="background-upload-button" for="background-upload-input">↑ Choose image</label><input id="background-upload-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload a website background" />${bg ? `<div class="background-preview-row"><span>Custom background applied</span><button type="button" data-remove-background>Remove</button></div><label for="background-overlay">Color overlay: ${bg.overlay}%</label><input type="range" id="background-overlay" data-background-overlay min="0" max="85" value="${bg.overlay}" /><label for="background-position">Background position</label><select id="background-position" data-background-position><option value="center" ${bg.position==='center'?'selected':''}>Center</option><option value="top" ${bg.position==='top'?'selected':''}>Top</option><option value="bottom" ${bg.position==='bottom'?'selected':''}>Bottom</option></select>` : ''}<p class="background-upload-note">Preview-only on GitHub Pages. Uploaded images need Cloudflare R2 for permanent hosting and sharing.</p></section>`;
     return `<div class="section-kicker">Step 01 · Set the mood</div><h2 class="editor-title">Find your forever aesthetic.</h2><p class="editor-hint">Choose a layout, then personalize every color. Your changes appear instantly.</p><div class="theme-picker">${THEMES.map(t => `<button type="button" class="theme-option ${draft.theme === t.id ? 'active' : ''}" data-theme="${t.id}" aria-pressed="${draft.theme === t.id}"><div class="theme-picture ${t.id}"><span class="mini-top">THE WEDDING OF</span><span class="mini-names">A &amp; K</span><span class="mini-date">FOREVER BEGINS HERE</span></div><span class="theme-label">${t.name}</span><span class="theme-desc">${t.desc}</span></button>`).join('')}</div>` +
-      `<section class="palette-panel" aria-label="Customize invitation colors"><div class="palette-head"><div><h3>Make it your own</h3><p id="paletteSelection">Using original theme colors</p></div><button type="button" class="reset-colors" data-reset-colors>↺ Reset theme colors</button></div><p class="palette-subheading">COLOR PALETTES</p><div class="palette-presets"><button type="button" class="palette-option" data-palette="theme" aria-pressed="true"><span class="palette-dots">${COLOR_FIELDS.map(([key])=>`<span style="background:${THEME_DEFAULTS[draft.theme][key]}" aria-hidden="true"></span>`).join('')}</span><span>Original</span></button>${palettes}</div><p class="palette-subheading">PICK INDIVIDUAL COLORS</p><div class="color-controls">${controls}</div><p class="color-contrast" id="colorContrastNotice" role="status"></p></section>`;
+      backgroundPanel + `<section class="palette-panel" aria-label="Customize invitation colors"><div class="palette-head"><div><h3>Make it your own</h3><p id="paletteSelection">Using original theme colors</p></div><button type="button" class="reset-colors" data-reset-colors>↺ Reset theme colors</button></div><p class="palette-subheading">COLOR PALETTES</p><div class="palette-presets"><button type="button" class="palette-option" data-palette="theme" aria-pressed="true"><span class="palette-dots">${COLOR_FIELDS.map(([key])=>`<span style="background:${THEME_DEFAULTS[draft.theme][key]}" aria-hidden="true"></span>`).join('')}</span><span>Original</span></button>${palettes}</div><p class="palette-subheading">PICK INDIVIDUAL COLORS</p><div class="color-controls">${controls}</div><p class="color-contrast" id="colorContrastNotice" role="status"></p></section>`;
   }
   function inputField(label, key, placeholder, maxlength, type = 'text') {
     return `<div class="field"><label for="field-${key}">${label}</label><input id="field-${key}" name="${key}" data-field="${key}" type="${type}" maxlength="${maxlength}" value="${attribute(draft[key] || '')}" placeholder="${attribute(placeholder)}" /></div>`;
@@ -321,6 +353,8 @@
     if (error) return notice(error);
     publishBusy = true; $('#nextButton').disabled = true; $('#nextButton').textContent = 'Publishing…'; notice('');
     try {
+      if (draft.background?.image?.startsWith('data:'))
+        throw new Error('Uploaded backgrounds are currently local preview only. Permanent image hosting must be configured before publishing.');
       const token = published?.slug ? savedSites()[published.slug] : null;
       const endpoint = token ? `/api/sites/${encodeURIComponent(published.slug)}` : '/api/sites';
       const method = token ? 'PATCH' : 'POST';
@@ -378,6 +412,7 @@
       }).catch(() => notice('The published site could not be loaded. Your local draft is still available.'));
     }
     $('#editor').addEventListener('click', (evt) => {
+      if (evt.target.closest('[data-remove-background]')) {draft.background=null;refresh();setStep(0);syncColorControls();return;}
       const layout = evt.target.closest('[data-layout-section][data-layout-id]');
       if (layout) {
         const section = layout.dataset.layoutSection, design = layout.dataset.layoutId;
@@ -419,6 +454,11 @@
     });
     $('#editor').addEventListener('input', (evt) => {
       const el = evt.target;
+      if (el.dataset.backgroundOverlay!==undefined && draft.background) {
+        draft.background.overlay=Number(el.value);saveDraft();preview();
+        const label=el.previousElementSibling;if(label)label.textContent='Color overlay: '+el.value+'%';
+        return;
+      }
       if (el.dataset.colorPicker || el.dataset.colorHex) {
         const key = el.dataset.colorPicker || el.dataset.colorHex;
         if (COLOR_FIELDS.some(([field]) => field === key) && COLOR_RE.test(el.value)) {
@@ -435,6 +475,8 @@
     });
     $('#editor').addEventListener('change', (evt) => {
       const el = evt.target;
+      if (el.id==='background-upload-input') {setBackgroundFile(el.files?.[0]);return;}
+      if (el.dataset.backgroundPosition && draft.background) {draft.background.position=el.value;refresh();return;}
       if (el.dataset.colorHex) { if (!COLOR_RE.test(el.value)) el.value = activeColors()[el.dataset.colorHex]; syncColorControls(); }
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; refresh(); }
       if (el.dataset.section) { draft.sections[el.dataset.section] = el.checked; refresh(); }
