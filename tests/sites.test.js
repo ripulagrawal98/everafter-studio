@@ -102,7 +102,7 @@ test('shared website renderer switches styles per section independently and safe
 
 test('editor and preview have separate, full-column scroll rails', async () => {
   const {readFileSync} = await import('node:fs');
-  const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  const html=readFileSync(new URL('../public/builder/index.html',import.meta.url),'utf8');
   const script=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   const style=readFileSync(new URL('../public/wedding-site.css',import.meta.url),'utf8');
   for (const id of ['editorScrollPane','editorVerticalSlider','editorScrollUp','editorScrollDown',
