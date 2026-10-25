@@ -17,8 +17,8 @@ export async function onRequestPost({request, env}) {
       if (existing) continue;
       try {
         await db.prepare('INSERT INTO sites (slug, data, edit_token_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-          .bind(slug, JSON.stringify(details), hashed, now, now).run();
-        return json({slug, url: `${new URL(request.url).origin}/s/${slug}`, editToken: token}, 201);
+          .bind(slug, JSON.stringify({...details, published: true}), hashed, now, now).run();
+        return json({slug, url: `${new URL(request.url).origin}/s/${slug}`, editToken: token, published: true}, 201);
       } catch (err) {
         if (!String(err.message || '').includes('UNIQUE constraint failed')) throw err;
       }
