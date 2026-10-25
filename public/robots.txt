@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /builder/
+Disallow: /api/
+
+Sitemap: https://vowandverse.pages.dev/sitemap.xml
