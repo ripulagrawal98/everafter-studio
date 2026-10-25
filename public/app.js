@@ -147,7 +147,7 @@
   function clearPendingOrder() {try {localStorage.removeItem(pendingKey);}catch{}}
   function displayAmount(paise) {return '₹'+(paise/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-  function publishActionText() { return published ? (published.isLive ? 'Update website ↗' : 'Save changes ↗') : 'Pay & publish website ↗'; }
+  function publishActionText() { return published ? 'Website published ✓' : readJSON('everafter:manual-request',null) ? 'Check request status ↗' : 'Request website ↗'; }
   function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
   function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); return true; } catch { return false; } }
   function savedSites() { return readJSON(EDIT_KEYS, {}); }
@@ -375,32 +375,24 @@
       `<button type="button" class="add-event" data-add-photo ${draft.photos.length >= 6 ? 'disabled' : ''}>+ Add photo link</button></div>`;
   }
   function publishEditor() {
-    const live = published?.isLive !== false;
-    const actions = published
-      ? `<div class="published-actions">
-          ${live ? `<button type="button" id="copyShare">Copy link</button><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open website ↗</a>` : ''}
-          <button type="button" id="togglePublication" class="publication-toggle">${live ? 'Unpublish website' : 'Republish website'}</button>
-        </div>`
-      : '';
-    const link = published
-      ? `<div class="published-links ${live ? '' : 'is-unpublished'}">
-          <h3>${live ? '✓ Your website is published' : 'Your website is unpublished'}</h3>
-          <div class="share-url">${escapeHtml(published.url)}</div>
-          ${live ? '' : '<p class="published-status-copy">Guests cannot view this invitation. Your details and website address are saved, ready to republish.</p>'}
-          ${actions}
-        </div>`
-      : '';
-    return `<div class="section-kicker">Step 05 · Almost forever</div>
-      <h2 class="editor-title">Ready to share the joy?</h2>
-      <p class="editor-hint">One more look before your wedding website goes live.</p>
+    const requested=readJSON('everafter:manual-request',null);
+    const approved=published?.isLive===true;
+    return `<div class="section-kicker">Step 05 · Request your website</div>
+      <h2 class="editor-title">Your forever, almost ready.</h2>
+      <p class="editor-hint">Online payments are coming soon. Build and preview your invitation for free, then contact our team to get it published.</p>
       <div class="publish-summary">
-        <div class="summary-line"><span>Invitation for</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div>
-        <div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(t => t.id === draft.theme)?.name || 'Blossom')}</strong></div>
-        <div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div>
-        <div class="summary-line"><span>Suggested link</span><strong>${published ? escapeHtml('/s/' + published.slug) : '/s/' + escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div>
+        <div class="summary-line"><span>For</span><strong>${escapeHtml(draft.partner1)} &amp; ${escapeHtml(draft.partner2)}</strong></div>
+        <div class="summary-line"><span>Theme</span><strong>${escapeHtml(THEMES.find(x=>x.id===draft.theme)?.name||draft.theme)}</strong></div>
+        <div class="summary-line"><span>Events</span><strong>${draft.events.length}</strong></div>
       </div>
-      <p class="publish-help">You can create and preview for free. Payment is required before the shareable wedding website is activated. ${escapeHtml(priceDisplay)}. Your private edit key stays on this device.</p>${!published && pendingOrder() ? '<p class="publish-help">You have an unfinished payment. Use Resume payment to continue securely.</p><button type="button" id="resumePayment" class="btn btn-ghost">Resume payment</button>' : ''}
-      ${link}`;
+      ${approved ? `<div class="published-links"><h3>Your wedding website is live!</h3><a href="${attribute(published.url)}" target="_blank" rel="noopener noreferrer">Open your website ↗</a><div class="published-actions"><button id="copyShare" type="button">Copy link</button><button id="togglePublication" type="button">Unpublish website</button></div></div>`
+       : requested ? `<div class="published-links"><h3>Request submitted</h3><p>Our team will review your request. Your website is not public yet.</p><button type="button" class="btn btn-ghost" id="checkRequestStatus">Check request status</button><p class="publish-help">Request reference: ${escapeHtml(requested.id)}</p></div>`
+       : `<div class="admin-contact-form"><h3>Contact admin to publish</h3>
+          <div class="field"><label for="requestName">Your name</label><input id="requestName" maxlength="90" placeholder="Your name" required /></div>
+          <div class="field"><label for="requestEmail">Email address</label><input id="requestEmail" type="email" maxlength="180" placeholder="you@example.com" required /></div>
+          <div class="field"><label for="requestPhone">Phone / WhatsApp (optional)</label><input id="requestPhone" type="tel" maxlength="32" placeholder="+91 ..." /></div>
+          <div class="field"><label for="requestMessage">Anything we should know? (optional)</label><textarea id="requestMessage" maxlength="650" placeholder="A note for our team"></textarea></div>
+          <p class="publish-help">After submitting, the admin will contact you and activate your final website manually. No payment is collected here.</p></div>`}`;
   }
   function validatePage(specificStep = step) {
     if (specificStep >= 1 && (!draft.partner1.trim() || !draft.partner2.trim())) return 'Please enter both names before continuing.';
@@ -494,50 +486,42 @@
       }catch(err){reject(err);}
     });
   }
-  async function publishSite() {
-    if (publishBusy) return;
-    const error=validatePage(4);
-    if(error) return notice(error);
-    publishBusy=true;$('#nextButton').disabled=true;$('#nextButton').textContent='Processing…';
+  async function checkRequestStatus() {
+    const pending=readJSON('everafter:manual-request',null);
+    if(!pending)return notice('No saved request was found.');
     try {
-      if (draft.background?.image?.startsWith('data:'))
-        throw new Error('Uploaded backgrounds need permanent image hosting before publishing.');
-      if(published?.slug){
-        const editToken=savedSites()[published.slug];
-        if(!editToken) throw Error('Private edit key is missing.');
-        const response=await fetch('/api/sites/'+encodeURIComponent(published.slug),{
-          method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+editToken},
-          body:JSON.stringify(draft)
-        });
-        const data=await response.json().catch(()=>null);
-        if(!response.ok) throw Error(data?.error||'Could not save changes.');
-        published.isLive=data.published!==false;
-        setStep(4);notice('Website changes saved.');return;
-      }
-      let pending=pendingOrder();
-      if(pending?.orderId && pending?.editToken && await recoverPaidOrder(pending)) return;
-      if(pending?.paymentResult?.razorpay_payment_id) {
-        await verifyPayment(pending.paymentResult,pending);
-        return;
-      }
-      if(!pending || !pending.orderId || !pending.editToken){
-        const response=await fetch('/api/checkout/create',{
-          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)
-        });
-        const data=await response.json().catch(()=>null);
-        if(!response.ok) throw Error(data?.error||'Unable to start secure checkout.');
-        pending=data;savePendingOrder(pending);
-      }
-      await launchPayment(pending);
-      if(!published) {
-        setStep(4);
-        notice('Payment not confirmed yet. No public link has been created. You can resume checkout.');
-      }
-    } catch(err) {
-      notice(err.message||'Checkout unavailable. Your draft is still saved.');
-    } finally {
-      publishBusy=false;$('#nextButton').disabled=false;$('#nextButton').textContent=publishActionText();
-    }
+      const res=await fetch('/api/publication-requests/'+encodeURIComponent(pending.id),{headers:{Authorization:'Bearer '+pending.editToken}});
+      const result=await res.json();
+      if(!res.ok)throw Error(result.error||'Could not check status.');
+      if(result.status==='approved'){
+        storeSite(result.slug,pending.editToken);
+        published={slug:result.slug,url:result.url,isLive:true};
+        localStorage.removeItem('everafter:manual-request');
+        history.replaceState(null,'','/?edit='+encodeURIComponent(result.slug));
+        setStep(4);notice('Approved! Your website is now live.');
+      } else notice('Your request is still awaiting admin review.');
+    } catch(e){notice(e.message);}
+  }
+  async function publishSite() {
+    if(publishBusy)return;
+    const validation=validatePage(4);if(validation)return notice(validation);
+    if(published?.slug)return notice('Your website is already available.');
+    if(readJSON('everafter:manual-request',null))return checkRequestStatus();
+    const name=$('#requestName')?.value.trim(),email=$('#requestEmail')?.value.trim();
+    const phone=$('#requestPhone')?.value.trim(),message=$('#requestMessage')?.value.trim();
+    if(!name||!email)return notice('Please enter your name and email to contact the admin.');
+    if(draft.background?.image?.startsWith('data:'))
+      return notice('Uploaded backgrounds are preview-only. Remove the uploaded background before requesting your website.');
+    publishBusy=true;$('#nextButton').disabled=true;$('#nextButton').textContent='Sending request…';
+    try {
+      const res=await fetch('/api/publication-requests',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({details:draft,contact:{name,email,phone,message}})});
+      const result=await res.json().catch(()=>null);
+      if(!res.ok)throw Error(result?.error||'Could not contact admin.');
+      localStorage.setItem('everafter:manual-request',JSON.stringify({id:result.requestId,editToken:result.editToken}));
+      setStep(4);notice('Request sent! Admin will contact you about publishing.');
+    }catch(e){notice(e.message||'Request submission is not available in the static preview.');}
+    finally{publishBusy=false;$('#nextButton').disabled=false;$('#nextButton').textContent=publishActionText();}
   }
   async function togglePublication() {
     if (!published || publishBusy) return;
@@ -612,7 +596,7 @@
       if (evt.target.closest('[data-add-photo]')) { if (draft.photos.length < 6) { draft.photos.push(''); refresh(); setStep(3); } return; }
       const photoRemove = evt.target.closest('[data-remove-photo]');
       if (photoRemove) { draft.photos.splice(+photoRemove.dataset.removePhoto,1); refresh(); setStep(3); return; }
-      if (evt.target.closest('#resumePayment') && !published) {publishSite();return;}
+      if (evt.target.closest('#checkRequestStatus')) {checkRequestStatus();return;}
       if (evt.target.closest('#togglePublication') && published) { togglePublication(); return; }
       if (evt.target.closest('#copyShare') && published && published.isLive) {
         navigator.clipboard?.writeText(published.url).then(() => notice('Website link copied.')).catch(() => notice('Copy the link shown above.'));
