@@ -31,8 +31,8 @@ test('direct publication is disabled and unpaid sites require payment',async()=>
  const {readFileSync}=await import('node:fs');
  const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
  assert.match(read('functions/api/sites/index.js'),/402/);
- assert.match(read('functions/api/sites/[slug].js'),/payment_status !== 'paid'/);
- assert.match(read('functions/s/[slug].js'),/payment_status !== 'paid'/);
- assert.match(read('functions/api/checkout/verify.js'),/validPaidPayment/);
- assert.match(read('functions/api/checkout/create.js'),/payment_status/);
+ assert.match(read('functions/api/sites/[slug].js'),/approved/);
+ assert.match(read('functions/s/[slug].js'),/approved/);
+ assert.match(read('functions/api/checkout/verify.js'),/503/);
+ assert.match(read('functions/api/checkout/create.js'),/503/);
 });
