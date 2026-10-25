@@ -10,7 +10,7 @@ An independent Cloudflare Pages application for creating customizable wedding we
 - Custom couple names, invitation messages, and 1–12 events
 - Live mobile and desktop invitation previews
 - Browser-saved drafts
-- Cloudflare D1-backed publishing and updates
+- Cloudflare D1-backed publishing, updates, unpublishing and republishing (without losing the same URL)
 - Public /s/<slug> invitation pages with Open Graph metadata
 - Private edit keys stored in the owner's browser
 
@@ -30,11 +30,13 @@ Open http://localhost:8788. Publishing requires Cloudflare Pages Functions and a
 
 ## API
 - `POST /api/sites`: Publish a site; returns URL and edit key
-- `GET /api/sites/:slug`: Load public invitation data
-- `PATCH /api/sites/:slug`: Edit an existing site using Bearer edit key
-- `GET /s/:slug`: Wedding invitation with social metadata
+- `GET /api/sites/:slug`: Load public invitation data; unpublished sites return 404 unless the owner sends a valid Bearer edit key
+- `PATCH /api/sites/:slug`: Edit an existing site using the Bearer edit key, or send `{\"published\":false}` to unpublish and `{\"published\":true}` to republish
+- `GET /s/:slug`: Wedding invitation with social metadata (404 while unpublished)
+
+Unpublishing preserves the site's data, edit key, and unique URL. New sites are published by default; previously published sites remain live after this update. No new D1 migration is needed.
 
 ## Limitations
-This is an MVP, not a production-ready multi-tenant service. Before public launch add authentication, ownership management, rate limits/Turnstile, image uploads, moderation, account recovery, privacy disclosures, monitoring, and customer-specific WhatsApp preview images. Anyone with a wedding link can see its event details. Losing browser storage also loses the local edit key; there is no account recovery yet.
+This is an MVP, not a production-ready multi-tenant service. Before public launch add authentication, ownership management, rate limits/Turnstile, image uploads, moderation, account recovery, privacy disclosures, monitoring, and customer-specific WhatsApp preview images. Anyone with a published wedding link can see its event details. Unpublished links return 404; previously shared or cached information cannot be revoked. Losing browser storage also loses the local edit key; there is no account recovery yet.
 
 Run tests: `npm test`.
