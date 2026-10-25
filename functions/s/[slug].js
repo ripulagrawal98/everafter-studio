@@ -9,7 +9,7 @@ export async function onRequestGet({params, env, request}) {
   const title = `${data.partner1} & ${data.partner2} — Wedding Invitation`;
   const description = data.tagline || 'You are invited to celebrate with us.';
   const canonical = new URL(request.url).origin + '/s/' + params.slug;
-  const assetResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
+  const assetResponse = await env.ASSETS.fetch(new URL('/builder/index.html', request.url));
   if (!assetResponse.ok) return new Response('Invitation application unavailable', {status:503});
   const html = (await assetResponse.text())
     .replace(/<title>[^<]*<\/title>/, `<title>${escape(title)}</title>`)
