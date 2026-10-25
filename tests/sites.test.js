@@ -144,3 +144,16 @@ test('public route and data endpoint exclude unpublished invitations', async () 
   assert.match(api,/tokenHash\(token\)/);
   assert.match(api,/current\.published !== false/);
 });
+
+test('contact admin fields retain input without triggering editor rerender',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+ assert.match(source,/contactDraft\[contactFieldMap\[el\.id\]\] = el\.value;/);
+ assert.match(source,/if \(Object\.hasOwn\(contactFieldMap, el\.id\)\)/);
+ assert.match(source,/if \(!changed\) return;/);
+ for(const id of ['requestName','requestEmail','requestPhone','requestMessage'])
+  assert.ok(source.includes(id),id);
+ assert.match(source,/attribute\(contactDraft\.name\)/);
+ assert.match(source,/attribute\(contactDraft\.email\)/);
+ assert.match(source,/escapeHtml\(contactDraft\.message\)/);
+});
