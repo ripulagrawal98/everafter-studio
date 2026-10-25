@@ -367,6 +367,53 @@
   function eventsEditor() {
     return `<div class="section-kicker">Step 03 · The celebrations</div><h2 class="editor-title">Every moment deserves its place.</h2><p class="editor-hint">Add your Haldi, Sangeet, wedding, or any other event. Up to 12 celebrations.</p><div class="events-list">${draft.events.map((event, index) => `<div class="event-editor"><div class="event-head"><span class="event-count">Celebration ${String(index + 1).padStart(2, '0')}</span><button type="button" class="text-button" data-remove-event="${attribute(event.id)}" aria-label="Remove ${attribute(event.name || 'event')}">Remove</button></div><div class="field"><label for="event-name-${index}">Event name</label><input id="event-name-${index}" data-event-id="${attribute(event.id)}" data-event-field="name" maxlength="60" value="${attribute(event.name)}" placeholder="Haldi, Sangeet, Wedding..." /></div><div class="field-grid"><div class="field"><label for="event-date-${index}">Date</label><input id="event-date-${index}" type="date" data-event-id="${attribute(event.id)}" data-event-field="date" value="${attribute(event.date)}" /></div><div class="field"><label for="event-time-${index}">Time</label><input id="event-time-${index}" type="time" data-event-id="${attribute(event.id)}" data-event-field="time" value="${attribute(event.time)}" /></div></div><div class="field"><label for="event-venue-${index}">Venue</label><input id="event-venue-${index}" data-event-id="${attribute(event.id)}" data-event-field="venue" maxlength="140" value="${attribute(event.venue)}" placeholder="Venue name, city" /></div></div>`).join('')}</div><button class="add-event" type="button" id="addEvent" ${draft.events.length >= 12 ? 'disabled' : ''}>+ Add another celebration</button>`;
   }
+  function musicEditor(){
+    const m=draft.music;
+    const options=[
+      ['rose-piano','Rose Piano — soft and romantic'],
+      ['royal-waltz','Royal Waltz — regal and graceful'],
+      ['morning-bells','Morning Bells — bright and delicate']
+    ];
+    const tracks=options.map(([id,name])=>'<option value="'+id+'" '+(m.track===id?'selected':'')+'>'+name+'</option>').join('');
+    return '<section class="music-setting"><h3>Background music</h3>'+
+      '<p class="ws-editor-note">Give guests the option to play music as they explore your invitation. Playback starts only when they tap Play.</p>'+
+      '<label class="music-check"><input type="checkbox" id="music-enabled" '+(m.enabled?'checked':'')+'/> Enable music</label>'+
+      (m.enabled?'<div class="music-options">'+
+        '<label class="music-check"><input type="radio" name="music-source" value="preset" '+(m.source==='preset'?'checked':'')+'/> Choose an instrumental melody</label>'+
+        '<label class="music-check"><input type="radio" name="music-source" value="upload" '+(m.source==='upload'?'checked':'')+'/> Upload my own song</label>'+
+        (m.source==='preset'?'<div class="field"><label for="music-track">Select a melody</label><select id="music-track">'+tracks+'</select></div>':
+        '<div class="field"><label for="music-file">Song file (MP3, M4A, OGG or WAV)</label><input id="music-file" type="file" accept=".mp3,.m4a,.ogg,.wav,audio/mpeg,audio/mp4,audio/ogg,audio/wav"/>'+
+        '<p class="ws-editor-note">'+(localAudioPreview?'Ready for preview on this device. ':m.url?'Saved on your website. ':'')+'Maximum 8 MB. Use audio you own or are licensed to share.</p>'+
+        '<p class="ws-editor-note">Before publication, uploaded audio is preview-only. Once approved, reopen the builder and upload it to Cloudflare R2 so guests can listen.</p></div>')+
+      '</div>':'')+'</section>';
+  }
+  async function uploadMusic(file){
+    if(!file)return;
+    const allowed=['audio/mpeg','audio/mp3','audio/mp4','audio/x-m4a','audio/ogg','audio/wav','audio/x-wav'];
+    if(!/\.(mp3|m4a|ogg|wav)$/i.test(file.name)||!allowed.includes(file.type))return notice('Choose an MP3, M4A, OGG or WAV song.');
+    if(!file.size||file.size>8*1024*1024)return notice('Music files must be 8 MB or smaller.');
+    if(localAudioPreview)URL.revokeObjectURL(localAudioPreview);
+    localAudioPreview=URL.createObjectURL(file);
+    draft.music={enabled:true,source:'upload',track:'',url:''};
+    refresh();
+    if(published?.slug&&savedSites()[published.slug]){
+      try{
+        const response=await fetch('/api/music/'+encodeURIComponent(published.slug)+'/',{
+          method:'POST',headers:{'Content-Type':file.type,Authorization:'Bearer '+savedSites()[published.slug]},body:file
+        });
+        const result=await response.json().catch(()=>null);
+        if(!response.ok)throw Error(result?.error||'Song upload failed.');
+        draft.music.url=result.url;
+        const saved=await fetch('/api/sites/'+encodeURIComponent(published.slug),{
+          method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+savedSites()[published.slug]},body:JSON.stringify(draft)
+        });
+        const answer=await saved.json().catch(()=>null);
+        if(!saved.ok)throw Error(answer?.error||'Song was uploaded but the invitation could not be updated.');
+        URL.revokeObjectURL(localAudioPreview);localAudioPreview=null;
+        refresh();setStep(3);notice('Your song is saved on the wedding website.');
+      }catch(e){setStep(3);notice(e.message||'Song is available for local preview only.');}
+    }else{setStep(3);notice('Song ready for preview. After approval, reopen the builder and upload it again to make it available to guests.');}
+  }
   function sectionsEditor() {
     const switches = [
       ['story','Our Story','A dedicated section with your journey together.'],
