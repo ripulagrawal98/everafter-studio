@@ -130,6 +130,13 @@
   });
   let draft = readJSON(STORAGE_KEY, clone(EXAMPLE));
   draft = normalize(draft);
+  // A gallery selection changes only the theme; keep the couple's existing draft.
+  const requestedTheme = new URLSearchParams(location.search).get('theme');
+  if (requestedTheme && THEMES.some(t => t.id === requestedTheme)) {
+    draft.theme = requestedTheme;
+    draft.colors = null;
+    saveDraft();
+  }
   let step = 0;
   let published = null;
   let publishBusy = false;
