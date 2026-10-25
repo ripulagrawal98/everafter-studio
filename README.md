@@ -95,3 +95,12 @@ Unpublishing preserves the site's data, edit key, and unique URL. New sites must
 This is an MVP, not a production-ready multi-tenant service. Before public launch add authentication, ownership management, rate limits/Turnstile, image uploads, moderation, account recovery, privacy disclosures, monitoring, and customer-specific WhatsApp preview images. Anyone with a published wedding link can see its event details. Unpublished links return 404; previously shared or cached information cannot be revoked. Losing browser storage also loses the local edit key; there is no account recovery yet.
 
 Run tests: `npm test`.
+## Optional wedding background music
+
+In the builder, open **Step 4 → Background music**. Music is off by default. Couples can select one of three built-in original instrumental melodies (synthesized in the browser, not commercial recordings), or choose an MP3, M4A, OGG or WAV song of their own. The invitation displays a Play / Pause control; audio **never autoplay**.
+
+Uploaded songs are limited to **8 MB**. Before a site is approved, an uploaded song is available for a local preview on that device only. After admin approval, reopen the edit link and upload it again so it can be saved for guests. Visitors can only request the chosen song while the wedding site is published.
+
+To enable published uploads, create a Cloudflare R2 bucket (for example `everafter-music`) and bind it to the Pages project with variable name **`MUSIC_BUCKET`** in both relevant deployment environments. Redeploy afterward. The authenticated endpoint `POST /api/music/:slug/` stores uploaded audio, while `GET /api/music/:slug/:file` serves only the currently selected audio of an active invitation. Users must hold the private edit key to upload or update preferences. R2 storage charges may apply.
+
+Only provide music the user owns or has appropriate rights to distribute; the included melodies are generated on the fly and require no third-party recorded audio. The current feature is an MVP: storage quotas, content scanning, abuse protections, file replacement cleanup and improved playback seeking remain recommended before wide public launch.
