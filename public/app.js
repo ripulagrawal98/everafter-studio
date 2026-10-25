@@ -162,7 +162,7 @@
 
   function publishActionText() { return published ? 'Website published ✓' : readJSON('everafter:manual-request',null) ? 'Check request status ↗' : 'Request website ↗'; }
   function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
-  function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); return true; } catch { return false; } }
+  function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); window.VowCloudDrafts?.changed(); return true; } catch { window.VowCloudDrafts?.changed(); return false; } }
   function savedSites() { return readJSON(EDIT_KEYS, {}); }
   function storeSite(slug, editToken) { try { const s = savedSites(); s[slug] = editToken; localStorage.setItem(EDIT_KEYS, JSON.stringify(s)); } catch {} }
   function formatDate(date, time) {
@@ -496,6 +496,10 @@
     const nextButton = $('#nextButton'); nextButton.textContent = step === 4 ? publishActionText() : 'Continue →';
     nextButton.disabled = publishBusy;
     notice('');
+    if (oldStep !== step) {
+      try {localStorage.setItem('everafter:editor-step', String(step));}catch{}
+      window.VowCloudDrafts?.changed();
+    }
     if (oldStep !== step && $('.workspace')) $('.workspace').scrollTop = 0;
     requestAnimationFrame(syncEditorScroll);
   }
@@ -738,7 +742,20 @@
     }));
     setupPreviewScroll();
     setupEditorScroll();
-    preview(); setStep(0); syncColorControls();
+    const savedStep = Number(localStorage.getItem('everafter:editor-step') || '0');
+    preview(); setStep(Number.isInteger(savedStep) && savedStep >= 0 && savedStep <= 4 ? savedStep : 0); syncColorControls();
+    window.VowCloudDrafts?.init({
+      snapshot:()=>({draft:JSON.parse(JSON.stringify(draft)),step}),
+      restore:(cloud,cloudStep)=>{
+        draft=normalize(cloud);
+        const restoredStep=Number.isInteger(cloudStep) && cloudStep>=0 && cloudStep<=4 ? cloudStep : 0;
+        // Don't allow an existing local theme-selection URL to overwrite a signed-in cloud draft.
+        try {localStorage.setItem(STORAGE_KEY,JSON.stringify(draft));}catch{}
+        step=-1;
+        setStep(restoredStep);
+        preview();syncColorControls();
+      }
+    });
   }
   async function setupPublished(slug) {
     $('#builderApp').hidden = true;
