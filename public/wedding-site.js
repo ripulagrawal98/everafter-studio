@@ -61,6 +61,14 @@
     const partner1 = String(d.partner1 || 'Partner one').trim();
     const partner2 = String(d.partner2 || 'Partner two').trim();
     const events = (Array.isArray(d.events) ? d.events : []).slice(0,12);
+    const music=d.music && d.music.enabled===true ? d.music : null;
+    const preset=music?.source==='preset' && ['rose-piano','royal-waltz','morning-bells'].includes(music.track);
+    const upload=music?.source==='upload' && typeof music.url==='string' &&
+      (/^\/api\/music\/[a-z0-9-]+\/[a-f0-9-]{36}\.(mp3|m4a|ogg|wav)$/.test(music.url) ||
+      (options.preview && /^blob:https?:\/\//.test(music.url)));
+    const musicButton=preset||upload?'<button type="button" class="ws-music-button" data-ws-music data-source="'+
+      (preset?'preset':'upload')+'" data-track="'+esc(preset?music.track:'')+'" data-url="'+esc(upload?music.url:'')+
+      '" aria-pressed="false" aria-label="Play or pause background music">♫ Play music</button>':'';
     const sections = d.sections && typeof d.sections === 'object' ? d.sections : {};
     const hasStory = sections.story !== false && !!String(d.story || '').trim();
     const venues = [...new Map(events.filter(e => String(e.venue || '').trim()).map(e => [String(e.venue).trim().toLowerCase(), String(e.venue).trim()])).values()];
@@ -97,7 +105,7 @@
     const placeholder = '<div class="ws-gallery-placeholder" aria-label="Photo gallery preview"><span>♡</span><p>Add photo links in the editor to fill this space with your favourite moments.</p></div>';
 
     return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + (uploadedStyle ? ' ws-uploaded-background ws-uploaded-' + (d.background?.scope === 'all' ? 'all' : 'hero') : '') + '"' + (customColorStyle || uploadedStyle ? ' style="' + esc(customColorStyle + uploadedStyle) + '"' : '') + '>' +
-      '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav></header>' +
+      '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav>' + musicButton + '</header>' +
       '<main>' +
         '<section class="ws-section ws-hero' + designClass('hero') + '" id="welcome">' +
           '<div class="ws-hero-ornament ws-ornament-left" aria-hidden="true">❀</div><div class="ws-hero-ornament ws-ornament-right" aria-hidden="true">❀</div>' +
