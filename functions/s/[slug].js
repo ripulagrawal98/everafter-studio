@@ -3,8 +3,8 @@ const escape = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 export async function onRequestGet({params, env, request}) {
   if (!validSlug(params.slug)) return new Response('Invitation not found', {status:404});
   if (!env.DB) return new Response('Wedding database not configured', {status:503});
-  const row = await env.DB.prepare('SELECT data FROM sites WHERE slug = ?').bind(params.slug).first();
-  if (!row || !isSitePublished(row)) return new Response('Invitation not found', {status:404, headers:{'Cache-Control':'no-store', 'X-Robots-Tag':'noindex'}});
+  const row = await env.DB.prepare('SELECT data, payment_status FROM sites WHERE slug = ?').bind(params.slug).first();
+  if (!row || row.payment_status !== 'paid' || !isSitePublished(row)) return new Response('Invitation not found', {status:404, headers:{'Cache-Control':'no-store', 'X-Robots-Tag':'noindex'}});
   const data = JSON.parse(row.data);
   const title = `${data.partner1} & ${data.partner2} — Wedding Invitation`;
   const description = data.tagline || 'You are invited to celebrate with us.';
