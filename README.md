@@ -14,6 +14,21 @@ An independent Cloudflare Pages application for creating customizable wedding we
 - Public /s/<slug> invitation pages with Open Graph metadata
 - Private edit keys stored in the owner's browser
 
+## Customer accounts and Save & Continue Later
+
+The customer builder supports **email one-time code sign-in**, private cloud drafts, autosave after edits (about 1 second idle), last-step restoration, and returning on a different browser or device. Existing browser-local draft saving remains available when customers are signed out or offline.
+
+**Production setup (Cloudflare Pages only):**
+1. Apply migration `migrations/0004_customer_drafts.sql` to the **same D1 database** already bound as `DB`. Apply earlier migrations first.
+2. Configure secrets in Cloudflare Pages → Settings → Variables and Secrets:
+   - `AUTH_SECRET`: a random secret at least 32 characters (PowerShell: `[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`).
+   - `RESEND_API_KEY`: server-side API key from Resend.
+   - `AUTH_EMAIL_FROM`: a sender address on a verified email domain, e.g. `Vow & Verse <login@yourdomain.com>`.
+3. Redeploy the Cloudflare Pages project. The GitHub Pages preview has no email or D1 backend.
+4. Test: Sign in with email → enter six-digit code → customize → wait for **All changes saved to cloud** → reopen on a different device and sign in again → check content and editor step are restored.
+
+**Security and current limits:** Verification codes expire in 10 minutes, are one-time, hashed with a server secret, and allow a maximum of five attempts. Resend requests have a 60-second cooldown and ten codes per email per day. Verified sessions use HttpOnly Secure cookies and expire after 30 days. Requests remain protected by Cloudflare D1 access and server-side session checks. Consider Cloudflare WAF/Turnstile and IP rate-limiting before public launch to protect email sending and D1 write costs. Photos stored as public HTTPS URLs sync, but browser-only image backgrounds and local audio blobs cannot currently sync between devices; these need R2 storage. If a cloud draft exists, signing in loads that draft in preference to the unsigned local draft. Cloud sync uses version conflict detection; do not edit the same draft concurrently on two devices.
+
 ## Private Admin Dashboard
 
 The admin dashboard is at `https://YOUR-CLOUDFLARE-DOMAIN/admin/`.
