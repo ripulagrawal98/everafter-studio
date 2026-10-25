@@ -3,4 +3,4 @@ Allow: /
 Disallow: /builder/
 Disallow: /api/
 
-Sitemap: https://vowandverse.pages.dev/sitemap.xml
+Sitemap: https://wedavique.pages.dev/sitemap.xml
