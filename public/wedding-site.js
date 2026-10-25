@@ -96,7 +96,7 @@
     ).join('');
     const placeholder = '<div class="ws-gallery-placeholder" aria-label="Photo gallery preview"><span>♡</span><p>Add photo links in the editor to fill this space with your favourite moments.</p></div>';
 
-    return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + (uploadedStyle ? ' ws-uploaded-background' : '') + '"' + (customColorStyle || uploadedStyle ? ' style="' + esc(customColorStyle + uploadedStyle) + '"' : '') + '>' +
+    return '<div class="wedding-site ws-' + theme + (customColorStyle ? ' ws-custom-colors' : '') + (uploadedStyle ? ' ws-uploaded-background ws-uploaded-' + (d.background?.scope === 'all' ? 'all' : 'hero') : '') + '"' + (customColorStyle || uploadedStyle ? ' style="' + esc(customColorStyle + uploadedStyle) + '"' : '') + '>' +
       '<header class="ws-nav"><a class="ws-monogram" href="#welcome" aria-label="Back to welcome">' + logo + '</a><nav aria-label="Wedding sections">' + nav + '</nav></header>' +
       '<main>' +
         '<section class="ws-section ws-hero' + designClass('hero') + '" id="welcome">' +
