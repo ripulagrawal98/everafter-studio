@@ -120,3 +120,27 @@ test('editor and preview have separate, full-column scroll rails', async () => {
   assert.match(style,/height:auto; min-height:660px; overflow:visible/);
   assert.doesNotMatch(script,/stage\.addEventListener\('scroll'/);
 });
+
+test('unpublishing state defaults to live and stays private when false', async () => {
+  const {isSitePublished, siteData, parseBody} = await import('../lib/sites.js');
+  const row = {slug:'anaya-kabir',data:JSON.stringify({...valid,published:false}),updated_at:'2026-10-25'};
+  assert.equal(isSitePublished(row),false);
+  assert.equal(siteData(row).published,false);
+  assert.equal(isSitePublished({...row,data:JSON.stringify(valid)}),true);
+  assert.equal(siteData({...row,data:JSON.stringify(valid)}).published,true);
+  const request = (payload) => new Request('https://example.com/api/sites/anaya-kabir',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  assert.deepEqual(await parseBody(request({published:false}),{allowStatus:true}),{published:false});
+  assert.deepEqual(await parseBody(request({published:true}),{allowStatus:true}),{published:true});
+  await assert.rejects(()=>parseBody(request({published:'false'}),{allowStatus:true}),/Invalid publishing status/);
+  await assert.rejects(()=>parseBody(request({published:false,partner1:'someone'}),{allowStatus:true}),/Invalid publishing status/);
+});
+
+test('public route and data endpoint exclude unpublished invitations', async () => {
+  const {readFileSync} = await import('node:fs');
+  const page = readFileSync(new URL('../functions/s/[slug].js', import.meta.url),'utf8');
+  const api = readFileSync(new URL('../functions/api/sites/[slug].js', import.meta.url),'utf8');
+  assert.match(page,/!isSitePublished\(row\)/);
+  assert.match(api,/!isSitePublished\(row\)/);
+  assert.match(api,/tokenHash\(token\)/);
+  assert.match(api,/current\.published !== false/);
+});
