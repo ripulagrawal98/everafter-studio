@@ -133,7 +133,14 @@
   let step = 0;
   let published = null;
   let publishBusy = false;
-  function publishActionText() { return published ? (published.isLive ? 'Update website ↗' : 'Save changes ↗') : 'Publish website ↗'; }
+  let priceDisplay = 'Price shown at checkout';
+  const pendingKey = 'everafter:pending-payment:v1';
+  function pendingOrder() {return readJSON(pendingKey,null);}
+  function savePendingOrder(value) {try {localStorage.setItem(pendingKey,JSON.stringify(value));} catch {}}
+  function clearPendingOrder() {try {localStorage.removeItem(pendingKey);}catch{}}
+  function displayAmount(paise) {return '₹'+(paise/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+  function publishActionText() { return published ? (published.isLive ? 'Update website ↗' : 'Save changes ↗') : 'Pay & publish website ↗'; }
   function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
   function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); return true; } catch { return false; } }
   function savedSites() { return readJSON(EDIT_KEYS, {}); }
@@ -385,7 +392,7 @@
         <div class="summary-line"><span>Celebrations</span><strong>${draft.events.length}</strong></div>
         <div class="summary-line"><span>Suggested link</span><strong>${published ? escapeHtml('/s/' + published.slug) : '/s/' + escapeHtml(slugify(`${draft.partner1}-${draft.partner2}`) || 'our-wedding')}</strong></div>
       </div>
-      <p class="publish-help">Publishing creates a public, shareable invitation. Anyone with the link can view event details. Your private edit key stays in this browser; keep a copy before clearing browser data.</p>
+      <p class="publish-help">You can create and preview for free. Payment is required before the shareable wedding website is activated. ${escapeHtml(priceDisplay)}. Your private edit key stays on this device.</p>${!published && pendingOrder() ? '<p class="publish-help">You have an unfinished payment. Use Resume payment to continue securely.</p><button type="button" id="resumePayment" class="btn btn-ghost">Resume payment</button>' : ''}
       ${link}`;
   }
   function validatePage(specificStep = step) {
@@ -415,32 +422,91 @@
     requestAnimationFrame(syncEditorScroll);
   }
   function refresh() { saveDraft(); preview(); if (step === 4) setStep(4); }
+  function checkoutScript() {
+    if (window.Razorpay) return Promise.resolve();
+    return new Promise((resolve,reject) => {
+      const script=document.createElement('script');
+      script.src='https://checkout.razorpay.com/v1/checkout.js';
+      script.async=true;
+      script.onload=()=>window.Razorpay?resolve():reject(new Error('Payment checkout unavailable.'));
+      script.onerror=()=>reject(new Error('Could not load Razorpay checkout. Check your connection.'));
+      document.head.appendChild(script);
+    });
+  }
+  async function verifyPayment(result, pending) {
+    const response=await fetch('/api/checkout/verify',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orderId:pending.orderId,paymentId:result.razorpay_payment_id,
+        signature:result.razorpay_signature,editToken:pending.editToken})
+    });
+    const data=await response.json().catch(()=>null);
+    if(!response.ok||!data?.published) throw new Error(data?.error||'Payment could not be verified.');
+    storeSite(data.slug,pending.editToken);
+    clearPendingOrder();
+    published={slug:data.slug,url:new URL(data.url,location.origin).href,isLive:true};
+    history.replaceState(null,'','/?edit='+encodeURIComponent(data.slug));
+    setStep(4);
+    notice('Payment verified! Your wedding website is now live. Share its link with your guests.');
+  }
+  async function launchPayment(pending) {
+    await checkoutScript();
+    return new Promise((resolve,reject)=>{
+      try {
+        const checkout=new window.Razorpay({
+          key:pending.keyId,amount:pending.amount,currency:pending.currency,
+          name:'Everafter Studio',description:'Wedding website publishing',
+          order_id:pending.orderId,
+          theme:{color:'#a77484'},
+          handler:async(result)=>{
+            try {await verifyPayment(result,pending);resolve();}
+            catch(err){reject(err);}
+          },
+          modal:{ondismiss:()=>resolve()}
+        });
+        checkout.on('payment.failed',()=>resolve());
+        checkout.open();
+      }catch(err){reject(err);}
+    });
+  }
   async function publishSite() {
     if (publishBusy) return;
-    const error = validatePage(4);
-    if (error) return notice(error);
-    publishBusy = true; $('#nextButton').disabled = true; $('#nextButton').textContent = 'Publishing…'; notice('');
+    const error=validatePage(4);
+    if(error) return notice(error);
+    publishBusy=true;$('#nextButton').disabled=true;$('#nextButton').textContent='Processing…';
     try {
       if (draft.background?.image?.startsWith('data:'))
-        throw new Error('Uploaded backgrounds are currently local preview only. Permanent image hosting must be configured before publishing.');
-      const token = published?.slug ? savedSites()[published.slug] : null;
-      const endpoint = token ? `/api/sites/${encodeURIComponent(published.slug)}` : '/api/sites';
-      const method = token ? 'PATCH' : 'POST';
-      const response = await fetch(endpoint, {
-        method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(draft)
-      });
-      const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error || `Publishing failed (${response.status}).`);
-      if (!result?.slug || !result?.url) throw new Error('The server returned an unexpected response.');
-      if (result.editToken) storeSite(result.slug, result.editToken);
-      published = { slug: result.slug, url: new URL(result.url, location.origin).href, isLive: result.published !== false };
-      history.replaceState(null, '', `/?edit=${encodeURIComponent(result.slug)}`);
-      notice('');
-      setStep(4);
-    } catch (err) {
-      notice(err instanceof TypeError || /Publishing failed \(40[45]|501\)/.test(err.message) ? 'Publishing is not available in static preview mode. Deploy to Cloudflare Pages and bind a D1 database to enable it.' : err.message);
-    } finally { publishBusy = false; $('#nextButton').disabled = false; $('#nextButton').textContent = publishActionText(); }
+        throw new Error('Uploaded backgrounds need permanent image hosting before publishing.');
+      if(published?.slug){
+        const editToken=savedSites()[published.slug];
+        if(!editToken) throw Error('Private edit key is missing.');
+        const response=await fetch('/api/sites/'+encodeURIComponent(published.slug),{
+          method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+editToken},
+          body:JSON.stringify(draft)
+        });
+        const data=await response.json().catch(()=>null);
+        if(!response.ok) throw Error(data?.error||'Could not save changes.');
+        published.isLive=data.published!==false;
+        setStep(4);notice('Website changes saved.');return;
+      }
+      let pending=pendingOrder();
+      if(!pending || !pending.orderId || !pending.editToken){
+        const response=await fetch('/api/checkout/create',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)
+        });
+        const data=await response.json().catch(()=>null);
+        if(!response.ok) throw Error(data?.error||'Unable to start secure checkout.');
+        pending=data;savePendingOrder(pending);
+      }
+      await launchPayment(pending);
+      if(!published) {
+        setStep(4);
+        notice('Payment not confirmed yet. No public link has been created. You can resume checkout.');
+      }
+    } catch(err) {
+      notice(err.message||'Checkout unavailable. Your draft is still saved.');
+    } finally {
+      publishBusy=false;$('#nextButton').disabled=false;$('#nextButton').textContent=publishActionText();
+    }
   }
   async function togglePublication() {
     if (!published || publishBusy) return;
@@ -515,6 +581,7 @@
       if (evt.target.closest('[data-add-photo]')) { if (draft.photos.length < 6) { draft.photos.push(''); refresh(); setStep(3); } return; }
       const photoRemove = evt.target.closest('[data-remove-photo]');
       if (photoRemove) { draft.photos.splice(+photoRemove.dataset.removePhoto,1); refresh(); setStep(3); return; }
+      if (evt.target.closest('#resumePayment') && !published) {publishSite();return;}
       if (evt.target.closest('#togglePublication') && published) { togglePublication(); return; }
       if (evt.target.closest('#copyShare') && published && published.isLive) {
         navigator.clipboard?.writeText(published.url).then(() => notice('Website link copied.')).catch(() => notice('Copy the link shown above.'));
@@ -559,6 +626,10 @@
       $('.preview-toggle button').forEach(x => { const active = x === b; x.classList.toggle('selected', active); x.setAttribute('aria-pressed', active ? 'true' : 'false'); });
       requestAnimationFrame(syncPreviewScroll);
     }));
+    fetch('/api/checkout/config').then(r=>r.json()).then(config=>{
+      priceDisplay=config.configured&&config.amount?displayAmount(config.amount):'Checkout not yet configured';
+      if(step===4)setStep(4);
+    }).catch(()=>{priceDisplay='Checkout requires Cloudflare deployment';});
     setupPreviewScroll();
     setupEditorScroll();
     preview(); setStep(0); syncColorControls();
