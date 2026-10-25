@@ -112,7 +112,7 @@
   const normalize = (v) => ({
     theme: validTheme(v?.theme),
     colors: validColors(v?.colors),
-    background: v?.background && typeof v.background.image === 'string' ? {image:v.background.image,position:v.background.position||'center',overlay:Number.isInteger(v.background.overlay)?v.background.overlay:45} : null,
+    background: v?.background && typeof v.background.image === 'string' ? {image:v.background.image,position:v.background.position||'center',overlay:Number.isInteger(v.background.overlay)?v.background.overlay:45,scope:v.background.scope==='all'?'all':'hero'} : null,
     sectionDesigns: cleanSectionLayouts(v?.sectionDesigns),
     partner1: String(v?.partner1 ?? '').slice(0, 70),
     partner2: String(v?.partner2 ?? '').slice(0, 70),
@@ -135,7 +135,7 @@
   let publishBusy = false;
   function publishActionText() { return published ? (published.isLive ? 'Update website ↗' : 'Save changes ↗') : 'Publish website ↗'; }
   function readJSON(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
-  function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); } catch {} }
+  function saveDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); return true; } catch { return false; } }
   function savedSites() { return readJSON(EDIT_KEYS, {}); }
   function storeSite(slug, editToken) { try { const s = savedSites(); s[slug] = editToken; localStorage.setItem(EDIT_KEYS, JSON.stringify(s)); } catch {} }
   function formatDate(date, time) {
@@ -219,32 +219,66 @@
   }
   async function setBackgroundFile(file) {
     if (!file) return;
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8*1024*1024)
-      return notice('Choose a JPG, PNG or WebP file smaller than 8 MB.');
-    const image = new Image();
+    const accepted = ['image/jpeg','image/png','image/webp'];
+    if (!accepted.includes(file.type)) return notice('Please select a JPG, PNG or WebP image.');
+    if (file.size > 8 * 1024 * 1024) return notice('Image too large. Choose a file smaller than 8 MB.');
+
+    const input = $('#background-upload-input');
+    if (input) input.disabled = true;
+    notice('Processing your image…');
     const url = URL.createObjectURL(file);
+    const picture = new Image();
     try {
-      await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Invalid image'));image.src=url;});
+      await new Promise((resolve, reject) => {
+        picture.onload = resolve;
+        picture.onerror = () => reject(new Error('This image could not be decoded.'));
+        picture.src = url;
+      });
+      if (!picture.naturalWidth || !picture.naturalHeight)
+        throw new Error('This image has invalid dimensions.');
       const canvas = document.createElement('canvas');
-      const scale = Math.min(1,1440/image.naturalWidth,1440/image.naturalHeight);
-      canvas.width = Math.max(1,Math.round(image.naturalWidth*scale));
-      canvas.height = Math.max(1,Math.round(image.naturalHeight*scale));
-      canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-      let imageData=canvas.toDataURL('image/webp',0.65);
-      if (imageData.length > 900000) {
-        const factor=Math.sqrt(750000/imageData.length);
-        canvas.width=Math.max(1,Math.round(canvas.width*factor));
-        canvas.height=Math.max(1,Math.round(canvas.height*factor));
-        canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-        imageData=canvas.toDataURL('image/webp',0.55);
+      const maxDimension = 1600;
+      let width = Math.max(1, Math.round(picture.naturalWidth * Math.min(1, maxDimension / Math.max(picture.naturalWidth, picture.naturalHeight))));
+      let height = Math.max(1, Math.round(picture.naturalHeight * width / picture.naturalWidth));
+      let imageData = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Image processing is unavailable in this browser.');
+        context.drawImage(picture, 0, 0, width, height);
+        imageData = canvas.toDataURL('image/webp',Math.max(0.35, 0.74 - attempt * 0.10));
+        if (!imageData.startsWith('data:image/webp;base64,'))
+          throw new Error('This browser cannot convert the image to WebP. Try Chrome or Edge.');
+        if (imageData.length <= 680000) break;
+        const factor = Math.min(0.85, Math.sqrt(600000 / imageData.length));
+        width = Math.max(1, Math.round(width * factor));
+        height = Math.max(1, Math.round(height * factor));
       }
-      if (imageData.length>900000) return notice('Image is too large after compression. Try a smaller image.');
-      draft.background={image:imageData,position:'center',overlay:45};
-      refresh();setStep(0);syncColorControls();
-      notice('Background uploaded for preview. Permanent publishing of this image requires Cloudflare image storage.');
-    } catch {
-      notice('Could not read this image. Try another JPG, PNG or WebP.');
-    } finally {URL.revokeObjectURL(url);}
+      if (imageData.length > 680000)
+        throw new Error('Image is still too large. Please use a smaller photo.');
+
+      const old = draft.background || {};
+      draft.background = {
+        image:imageData,
+        position:old.position || 'center',
+        overlay:Number.isInteger(old.overlay) ? old.overlay : 45,
+        scope:old.scope || 'hero'
+      };
+      const saved = saveDraft();
+      preview();
+      // Show the welcome section where the new image is visible.
+      $('.preview-column')?.scrollTo({top:0,behavior:'smooth'});
+      setStep(0);
+      syncColorControls();
+      notice(saved ? 'Background applied. View the welcome section in the preview.' :
+        'Background applied for this session, but browser storage is full. Use a smaller image.');
+    } catch (error) {
+      notice(error?.message || 'Could not process this image.');
+    } finally {
+      URL.revokeObjectURL(url);
+      if (input?.isConnected) input.disabled = false;
+    }
   }
   function themeEditor() {
     const colors = activeColors();
@@ -256,7 +290,41 @@
       `<div class="color-control"><label for="picker-${key}">${label}</label><div class="color-control-inputs"><input type="color" id="picker-${key}" data-color-picker="${key}" value="${colors[key]}" aria-label="Pick ${label.toLowerCase()}" /><input type="text" id="hex-${key}" data-color-hex="${key}" value="${colors[key]}" maxlength="7" spellcheck="false" aria-label="${label} hex code" pattern="#[0-9a-fA-F]{6}" /></div></div>`
     ).join('');
     const bg = draft.background;
-    const backgroundPanel = `<section class="background-upload-panel"><h3>Upload your own background</h3><p>Bring your own floral artwork, texture or photograph. It updates the welcome section immediately.</p><label class="background-upload-button" for="background-upload-input">↑ Choose image</label><input id="background-upload-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload a website background" />${bg ? `<div class="background-preview-row"><span>Custom background applied</span><button type="button" data-remove-background>Remove</button></div><label for="background-overlay">Color overlay: ${bg.overlay}%</label><input type="range" id="background-overlay" data-background-overlay min="0" max="85" value="${bg.overlay}" /><label for="background-position">Background position</label><select id="background-position" data-background-position><option value="center" ${bg.position==='center'?'selected':''}>Center</option><option value="top" ${bg.position==='top'?'selected':''}>Top</option><option value="bottom" ${bg.position==='bottom'?'selected':''}>Bottom</option></select>` : ''}<p class="background-upload-note">Preview-only on GitHub Pages. Uploaded images need Cloudflare R2 for permanent hosting and sharing.</p></section>`;
+    const backgroundPanel = `
+      <section class="background-upload-panel">
+        <h3>Upload your own background</h3>
+        <p>Use your favourite floral illustration, artwork or photograph. Your uploaded image will appear in the live preview.</p>
+        <div class="background-upload-actions">
+          <label class="background-upload-button" for="background-upload-input">Choose background image</label>
+          <input id="background-upload-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/png,image/jpeg,image/webp" aria-label="Upload a website background" />
+          ${bg ? '<button type="button" class="background-remove" data-remove-background>Remove image</button>' : ''}
+        </div>
+        ${bg ? `
+          <div class="background-thumbnail" role="status" aria-label="Selected background image">
+            <img src="${attribute(bg.image)}" alt="Preview of your uploaded background" />
+            <span>Image selected ✓</span>
+          </div>
+          <div class="background-setting">
+            <label for="background-scope">Apply background to</label>
+            <select id="background-scope" data-background-scope>
+              <option value="hero" ${bg.scope!=='all'?'selected':''}>Welcome section only</option>
+              <option value="all" ${bg.scope==='all'?'selected':''}>Entire wedding website</option>
+            </select>
+          </div>
+          <div class="background-setting">
+            <label for="background-overlay">Image tint: ${bg.overlay}%</label>
+            <input type="range" id="background-overlay" data-background-overlay min="0" max="85" value="${bg.overlay}" />
+          </div>
+          <div class="background-setting">
+            <label for="background-position">Image position</label>
+            <select id="background-position" data-background-position>
+              <option value="center" ${bg.position==='center'?'selected':''}>Center</option>
+              <option value="top" ${bg.position==='top'?'selected':''}>Top</option>
+              <option value="bottom" ${bg.position==='bottom'?'selected':''}>Bottom</option>
+            </select>
+          </div>` : ''}
+        <p class="background-upload-note">JPG, PNG or WebP • max 8 MB. Images remain local on GitHub Pages; public publishing with uploads requires image storage.</p>
+      </section>`;
     return `<div class="section-kicker">Step 01 · Set the mood</div><h2 class="editor-title">Find your forever aesthetic.</h2><p class="editor-hint">Choose a layout, then personalize every color. Your changes appear instantly.</p><div class="theme-picker">${THEMES.map(t => `<button type="button" class="theme-option ${draft.theme === t.id ? 'active' : ''}" data-theme="${t.id}" aria-pressed="${draft.theme === t.id}"><div class="theme-picture ${t.id}"><span class="mini-top">THE WEDDING OF</span><span class="mini-names">A &amp; K</span><span class="mini-date">FOREVER BEGINS HERE</span></div><span class="theme-label">${t.name}</span><span class="theme-desc">${t.desc}</span></button>`).join('')}</div>` +
       backgroundPanel + `<section class="palette-panel" aria-label="Customize invitation colors"><div class="palette-head"><div><h3>Make it your own</h3><p id="paletteSelection">Using original theme colors</p></div><button type="button" class="reset-colors" data-reset-colors>↺ Reset theme colors</button></div><p class="palette-subheading">COLOR PALETTES</p><div class="palette-presets"><button type="button" class="palette-option" data-palette="theme" aria-pressed="true"><span class="palette-dots">${COLOR_FIELDS.map(([key])=>`<span style="background:${THEME_DEFAULTS[draft.theme][key]}" aria-hidden="true"></span>`).join('')}</span><span>Original</span></button>${palettes}</div><p class="palette-subheading">PICK INDIVIDUAL COLORS</p><div class="color-controls">${controls}</div><p class="color-contrast" id="colorContrastNotice" role="status"></p></section>`;
   }
@@ -476,7 +544,8 @@
     $('#editor').addEventListener('change', (evt) => {
       const el = evt.target;
       if (el.id==='background-upload-input') {setBackgroundFile(el.files?.[0]);return;}
-      if (el.dataset.backgroundPosition && draft.background) {draft.background.position=el.value;refresh();return;}
+      if (el.dataset.backgroundPosition && draft.background) { draft.background.position=el.value;saveDraft();preview();return; }
+      if (el.dataset.backgroundScope && draft.background) { draft.background.scope=el.value==='all'?'all':'hero';saveDraft();preview();return; }
       if (el.dataset.colorHex) { if (!COLOR_RE.test(el.value)) el.value = activeColors()[el.dataset.colorHex]; syncColorControls(); }
       if (el.dataset.eventField) { const e = draft.events.find(v => v.id === el.dataset.eventId); if (e) e[el.dataset.eventField] = el.value; refresh(); }
       if (el.dataset.section) { draft.sections[el.dataset.section] = el.checked; refresh(); }
