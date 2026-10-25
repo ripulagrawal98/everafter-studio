@@ -14,7 +14,32 @@ An independent Cloudflare Pages application for creating customizable wedding we
 - Public /s/<slug> invitation pages with Open Graph metadata
 - Private edit keys stored in the owner's browser
 
-## Payment-gated publication (Razorpay, India)
+## Manual publication requests (payments coming soon)
+
+Customers design and preview their site at no cost. Step 5 now offers **Contact admin to publish** rather than an unfinished payment page.
+
+Set up the separate Cloudflare Pages application and D1 binding `DB`, then apply **all migrations in order**, including `migrations/0003_publication_requests.sql`. Set Cloudflare secret `ADMIN_API_TOKEN` to a random value of at least 32 characters.
+
+`POST /api/publication-requests` saves the wedding draft privately, plus customer contact details. `GET /api/publication-requests/:id` lets that customer check status using their browser-local private key; the URL is returned only after approval.
+
+Admin endpoints (HTTP Bearer `ADMIN_API_TOKEN`, **never put this secret in frontend code**):
+- `GET /api/admin/requests` — list up to 100 recent requests and contacts.
+- `POST /api/admin/requests/:id/approve` — approve, activate and return the final wedding URL.
+
+Example using a terminal with your secret loaded into `$ADMIN_API_TOKEN`:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_API_TOKEN" https://YOUR-PAGES-DOMAIN/api/admin/requests
+curl -X POST -H "Authorization: Bearer $ADMIN_API_TOKEN" https://YOUR-PAGES-DOMAIN/api/admin/requests/REQUEST_ID/approve
+```
+
+No admin dashboard or automated email notifications yet: review the pending requests through the protected API, and send the approved URL to the customer using their submitted email or phone. GitHub Pages has no backend; request submission works only after Cloudflare D1 setup. Rate limits, abuse protection, retention/privacy policy and auth should be added before broad public access.
+
+### Payment integration (paused)
+
+The previous Razorpay checkout code is retained for future work, but the checkout creation, verification and webhook routes are now disabled. Do not use the old payment setup until it is deliberately re-enabled and retested.
+
+## Previous Razorpay setup reference (inactive)
 
 Customers design and preview free; **public wedding links are activated only after a captured payment**.
 
